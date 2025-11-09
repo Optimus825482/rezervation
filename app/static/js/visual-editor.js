@@ -23,6 +23,7 @@ class VisualSeatingEditor {
         this.dragOffset = { x: 0, y: 0 };
         this.zoom = 1;
         this.pan = { x: 0, y: 0 };
+        this.gridVisible = true; // Grid visibility toggle
         
         // Undo/Redo system
         this.history = [];
@@ -37,6 +38,7 @@ class VisualSeatingEditor {
         this.createCanvas();
         this.createStage();
         this.setupEventListeners();
+        this.setupKeyboardNavigation();
         this.draw();
     }
     
@@ -147,10 +149,10 @@ class VisualSeatingEditor {
         this.canvas.addEventListener('mouseup', this.onMouseUp.bind(this));
         this.canvas.addEventListener('click', this.onClick.bind(this));
         
-        // Sahne drag event listener
+        // Sahne drag event listener - Global listeners for better drag experience
         this.stage.addEventListener('mousedown', this.onStageMouseDown.bind(this));
-        this.stage.addEventListener('mousemove', this.onStageMouseMove.bind(this));
-        this.stage.addEventListener('mouseup', this.onStageMouseUp.bind(this));
+        document.addEventListener('mousemove', this.onStageMouseMove.bind(this));
+        document.addEventListener('mouseup', this.onStageMouseUp.bind(this));
         
         // Keyboard shortcuts
         document.addEventListener('keydown', this.onKeyDown.bind(this));
@@ -246,7 +248,10 @@ class VisualSeatingEditor {
             reserved: false
         };
         
+        console.log('➕ Seating ekleniyor:', seating);
         this.seatings.push(seating);
+        console.log('📊 Toplam seating:', this.seatings.length);
+        
         this.saveState();
         this.draw();
         return seating;
@@ -807,6 +812,178 @@ class VisualSeatingEditor {
             this.config.gridSize = config.gridSize;
             this.drawGrid();
         }
+    }
+    
+    // Keyboard navigation
+    setupKeyboardNavigation() {
+        document.addEventListener('keydown', (e) => {
+            if (!this.selectedSeating) return;
+            
+            const step = e.shiftKey ? this.config.gridSize : 1;
+            let moved = false;
+            
+            switch(e.key) {
+                case 'ArrowUp':
+                    this.selectedSeating.y -= step;
+                    moved = true;
+                    break;
+                case 'ArrowDown':
+                    this.selectedSeating.y += step;
+                    moved = true;
+                    break;
+                case 'ArrowLeft':
+                    this.selectedSeating.x -= step;
+                    moved = true;
+                    break;
+                case 'ArrowRight':
+                    this.selectedSeating.x += step;
+                    moved = true;
+                    break;
+                case 'Delete':
+                case 'Backspace':
+                    e.preventDefault();
+                    this.deleteSeating(this.selectedSeating);
+                    return;
+                case 'Escape':
+                    this.selectedSeating = null;
+                    this.draw();
+                    return;
+                case 'd':
+                case 'D':
+                    if (e.ctrlKey || e.metaKey) {
+                        e.preventDefault();
+                        this.duplicateSeating(this.selectedSeating);
+                        return;
+                    }
+                    break;
+            }
+            
+            if (moved) {
+                e.preventDefault();
+                this.snapToGrid(this.selectedSeating);
+                this.saveState();
+                this.draw();
+            }
+        });
+    }
+    
+    duplicateSeating(seating) {
+        if (!seating) return;
+        
+        const newSeating = {
+            ...seating,
+            id: Date.now(),
+            x: seating.x + 20,
+            y: seating.y + 20,
+            name: `${seating.name} (Kopya)`
+        };
+        
+        this.seatings.push(newSeating);
+        this.selectedSeating = newSeating;
+        this.saveState();
+        this.draw();
+    }
+    
+    deleteSeating(seating) {
+        if (!seating) return;
+        
+        const index = this.seatings.indexOf(seating);
+        if (index > -1) {
+            this.seatings.splice(index, 1);
+            this.selectedSeating = null;
+            this.saveState();
+            this.draw();
+        }
+    }
+    
+    // Alignment helpers
+    alignLeft() {
+        if (this.seatings.length === 0) return;
+        const minX = Math.min(...this.seatings.map(s => s.x));
+        this.seatings.forEach(s => s.x = minX);
+        this.saveState();
+        this.draw();
+    }
+    
+    alignRight() {
+        if (this.seatings.length === 0) return;
+        const maxX = Math.max(...this.seatings.map(s => s.x + s.width));
+        this.seatings.forEach(s => s.x = maxX - s.width);
+        this.saveState();
+        this.draw();
+    }
+    
+    alignTop() {
+        if (this.seatings.length === 0) return;
+        const minY = Math.min(...this.seatings.map(s => s.y));
+        this.seatings.forEach(s => s.y = minY);
+        this.saveState();
+        this.draw();
+    }
+    
+    alignBottom() {
+        if (this.seatings.length === 0) return;
+        const maxY = Math.max(...this.seatings.map(s => s.y + s.height));
+        this.seatings.forEach(s => s.y = maxY - s.height);
+        this.saveState();
+        this.draw();
+    }
+    
+    alignCenter() {
+        if (this.seatings.length === 0) return;
+        const centerX = this.config.width / 2;
+        const avgWidth = this.seatings.reduce((sum, s) => sum + s.width, 0) / this.seatings.length;
+        this.seatings.forEach(s => s.x = centerX - avgWidth / 2);
+        this.saveState();
+        this.draw();
+    }
+    
+    alignMiddle() {
+        if (this.seatings.length === 0) return;
+        const centerY = this.config.height / 2;
+        const avgHeight = this.seatings.reduce((sum, s) => sum + s.height, 0) / this.seatings.length;
+        this.seatings.forEach(s => s.y = centerY - avgHeight / 2);
+        this.saveState();
+        this.draw();
+    }
+    
+    // Distribute helpers
+    distributeHorizontally() {
+        if (this.seatings.length < 3) return;
+        
+        const sorted = [...this.seatings].sort((a, b) => a.x - b.x);
+        const first = sorted[0];
+        const last = sorted[sorted.length - 1];
+        const totalSpace = (last.x + last.width) - first.x;
+        const spacing = totalSpace / (sorted.length - 1);
+        
+        sorted.forEach((seating, i) => {
+            if (i > 0 && i < sorted.length - 1) {
+                seating.x = first.x + (spacing * i);
+            }
+        });
+        
+        this.saveState();
+        this.draw();
+    }
+    
+    distributeVertically() {
+        if (this.seatings.length < 3) return;
+        
+        const sorted = [...this.seatings].sort((a, b) => a.y - b.y);
+        const first = sorted[0];
+        const last = sorted[sorted.length - 1];
+        const totalSpace = (last.y + last.height) - first.y;
+        const spacing = totalSpace / (sorted.length - 1);
+        
+        sorted.forEach((seating, i) => {
+            if (i > 0 && i < sorted.length - 1) {
+                seating.y = first.y + (spacing * i);
+            }
+        });
+        
+        this.saveState();
+        this.draw();
     }
 }
 

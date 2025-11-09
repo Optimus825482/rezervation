@@ -11,10 +11,27 @@ class Config:
     JWT_SECRET_KEY = os.environ.get('JWT_SECRET_KEY') or 'jwt-secret-key-change-me'
     JWT_ACCESS_TOKEN_EXPIRES = timedelta(hours=int(os.environ.get('JWT_ACCESS_TOKEN_EXPIRES', 1)))
 
-    # Database
-    DATABASE_URL = os.environ.get('DATABASE_URL', 'postgresql://postgres:password@localhost/rezervasyon_db')
-    SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL', 'postgresql://postgres:password@localhost/rezervasyon_db')
+    # Database - Railway compatibility fix
+    @staticmethod
+    def get_database_uri():
+        """Get database URI with Railway postgres:// to postgresql:// fix"""
+        database_url = os.environ.get('DATABASE_URL', 'postgresql://postgres:password@localhost/rezervasyon_db')
+        
+        # Railway uses postgres:// but SQLAlchemy needs postgresql://
+        if database_url and database_url.startswith('postgres://'):
+            database_url = database_url.replace('postgres://', 'postgresql://', 1)
+        
+        return database_url
+    
+    DATABASE_URL = get_database_uri.__func__()
+    SQLALCHEMY_DATABASE_URI = DATABASE_URL
     SQLALCHEMY_TRACK_MODIFICATIONS = False
+    SQLALCHEMY_ENGINE_OPTIONS = {
+        'pool_pre_ping': True,  # Verify connections before using
+        'pool_recycle': 300,    # Recycle connections after 5 minutes
+        'pool_size': 10,        # Connection pool size
+        'max_overflow': 20      # Max overflow connections
+    }
 
     # Redis
     REDIS_URL = os.environ.get('REDIS_URL', 'redis://localhost:6379/0')
@@ -52,6 +69,21 @@ class ProductionConfig(Config):
     FLASK_ENV = 'production'
     DEBUG = False
     
+    # Database - Override with production settings
+    DATABASE_URL = Config.get_database_uri()
+    SQLALCHEMY_DATABASE_URI = DATABASE_URL
+    SQLALCHEMY_TRACK_MODIFICATIONS = False
+    SQLALCHEMY_ENGINE_OPTIONS = {
+        'pool_pre_ping': True,
+        'pool_recycle': 300,
+        'pool_size': 10,
+        'max_overflow': 20,
+        'connect_args': {
+            'connect_timeout': 10,
+            'options': '-c statement_timeout=30000'  # 30 second query timeout
+        }
+    }
+    
     # Secure Cookie Settings
     SESSION_COOKIE_SECURE = True      # Only send cookies over HTTPS
     SESSION_COOKIE_HTTPONLY = True    # Prevent JavaScript access to cookies
@@ -63,8 +95,18 @@ class ProductionConfig(Config):
     SESSION_USE_SIGNER = True          # Sign session cookies
     PERMANENT_SESSION_LIFETIME = timedelta(hours=24)
     
-    # Database
-    SQLALCHEMY_TRACK_MODIFICATIONS = False
+    @staticmethod
+    def init_app(app):
+        """Production-specific initialization"""
+        # Log to stderr
+        import logging
+        from logging import StreamHandler
+        
+        handler = StreamHandler()
+        handler.setLevel(logging.INFO)
+        app.logger.addHandler(handler)
+        app.logger.setLevel(logging.INFO)
+        app.logger.info('Production config initialized')
 
 
 class TestingConfig(Config):

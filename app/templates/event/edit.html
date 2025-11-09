@@ -182,12 +182,16 @@
                                 Sahne Konumu
                             </span>
                             <select class="input-shadcn" name="stage_position">
-                                <option value="top" {{ 'selected' if event.stage_position=='top' else '' }}>Üst</option>
-                                <option value="bottom" {{ 'selected' if event.stage_position=='bottom' else '' }}>Alt
+                                <option value="top" {{ 'selected' if event.stage_position and
+                                    event.stage_position.value=='top' else '' }}>Üst</option>
+                                <option value="bottom" {{ 'selected' if event.stage_position and
+                                    event.stage_position.value=='bottom' else '' }}>Alt
                                 </option>
-                                <option value="left" {{ 'selected' if event.stage_position=='left' else '' }}>Sol
+                                <option value="left" {{ 'selected' if event.stage_position and
+                                    event.stage_position.value=='left' else '' }}>Sol
                                 </option>
-                                <option value="right" {{ 'selected' if event.stage_position=='right' else '' }}>Sağ
+                                <option value="right" {{ 'selected' if event.stage_position and
+                                    event.stage_position.value=='right' else '' }}>Sağ
                                 </option>
                             </select>
                         </label>
@@ -280,7 +284,7 @@
                                     <h3 class="text-lg font-semibold">Oturum Planı</h3>
                                     <div class="flex gap-2">
                                         <button type="button" class="btn-shadcn btn-shadcn-sm btn-shadcn-outline"
-                                            onclick="loadFromTemplate()">
+                                            onclick="openTemplateModal()">
                                             <i class="fas fa-download"></i>
                                             Şablondan Yükle
                                         </button>
@@ -346,21 +350,114 @@
                                 <h4 class="text-sm font-semibold text-slate-700 dark:text-slate-200 mb-3">Araçlar</h4>
                                 <div class="grid grid-cols-2 gap-2">
                                     <button type="button" class="btn-shadcn btn-shadcn-sm btn-shadcn-outline"
-                                        onclick="zoomIn()">
+                                        onclick="undoAction()" id="undo-btn" title="Geri Al (Ctrl+Z)">
+                                        <i class="fas fa-undo"></i>
+                                    </button>
+                                    <button type="button" class="btn-shadcn btn-shadcn-sm btn-shadcn-outline"
+                                        onclick="redoAction()" id="redo-btn" title="İleri Al (Ctrl+Y)">
+                                        <i class="fas fa-redo"></i>
+                                    </button>
+                                    <button type="button" class="btn-shadcn btn-shadcn-sm btn-shadcn-outline"
+                                        onclick="zoomIn()" title="Yakınlaştır">
                                         <i class="fas fa-search-plus"></i>
                                     </button>
                                     <button type="button" class="btn-shadcn btn-shadcn-sm btn-shadcn-outline"
-                                        onclick="zoomOut()">
+                                        onclick="zoomOut()" title="Uzaklaştır">
                                         <i class="fas fa-search-minus"></i>
                                     </button>
                                     <button type="button" class="btn-shadcn btn-shadcn-sm btn-shadcn-outline"
-                                        onclick="resetZoom()">
+                                        onclick="resetZoom()" title="Zoom Sıfırla">
                                         <i class="fas fa-expand-arrows-alt"></i>
                                     </button>
                                     <button type="button" class="btn-shadcn btn-shadcn-sm btn-shadcn-outline"
-                                        onclick="clearCanvas()">
+                                        onclick="toggleGrid()" id="toggle-grid-btn" title="Kılavuz Çizgileri">
+                                        <i class="fas fa-th"></i>
+                                    </button>
+                                    <button type="button" class="btn-shadcn btn-shadcn-sm btn-shadcn-outline"
+                                        onclick="autoArrange()" title="Otomatik Düzenle">
+                                        <i class="fas fa-magic"></i>
+                                    </button>
+                                    <button type="button" class="btn-shadcn btn-shadcn-sm btn-shadcn-outline"
+                                        onclick="resolveCollisions()" title="Çakışmaları Çöz">
+                                        <i class="fas fa-compress-arrows-alt"></i>
+                                    </button>
+                                    <button type="button" class="btn-shadcn btn-shadcn-sm btn-shadcn-outline"
+                                        onclick="clearCanvas()" title="Tümünü Temizle">
                                         <i class="fas fa-trash"></i>
                                     </button>
+                                    <button type="button" class="btn-shadcn btn-shadcn-sm btn-shadcn-outline"
+                                        onclick="duplicateSelected()" title="Seçili Oturumu Çoğalt (Ctrl+D)">
+                                        <i class="fas fa-copy"></i>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- Hizalama Araçları -->
+                            <div class="border-t pt-4">
+                                <h4 class="text-sm font-semibold text-slate-700 dark:text-slate-200 mb-3">Hizalama</h4>
+                                <div class="grid grid-cols-3 gap-2">
+                                    <button type="button" class="btn-shadcn btn-shadcn-sm btn-shadcn-outline"
+                                        onclick="alignLeft()" title="Sola Hizala">
+                                        <i class="fas fa-align-left"></i>
+                                    </button>
+                                    <button type="button" class="btn-shadcn btn-shadcn-sm btn-shadcn-outline"
+                                        onclick="alignCenter()" title="Ortaya Hizala">
+                                        <i class="fas fa-align-center"></i>
+                                    </button>
+                                    <button type="button" class="btn-shadcn btn-shadcn-sm btn-shadcn-outline"
+                                        onclick="alignRight()" title="Sağa Hizala">
+                                        <i class="fas fa-align-right"></i>
+                                    </button>
+                                    <button type="button" class="btn-shadcn btn-shadcn-sm btn-shadcn-outline"
+                                        onclick="alignTop()" title="Üste Hizala">
+                                        <i class="fas fa-arrow-up"></i>
+                                    </button>
+                                    <button type="button" class="btn-shadcn btn-shadcn-sm btn-shadcn-outline"
+                                        onclick="alignMiddle()" title="Dikey Ortala">
+                                        <i class="fas fa-arrows-alt-v"></i>
+                                    </button>
+                                    <button type="button" class="btn-shadcn btn-shadcn-sm btn-shadcn-outline"
+                                        onclick="alignBottom()" title="Alta Hizala">
+                                        <i class="fas fa-arrow-down"></i>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- Dağıtım Araçları -->
+                            <div class="border-t pt-4">
+                                <h4 class="text-sm font-semibold text-slate-700 dark:text-slate-200 mb-3">Dağıtım</h4>
+                                <div class="grid grid-cols-2 gap-2">
+                                    <button type="button" class="btn-shadcn btn-shadcn-sm btn-shadcn-outline"
+                                        onclick="distributeHorizontally()" title="Yatay Dağıt">
+                                        <i class="fas fa-arrows-alt-h"></i>
+                                        <span class="text-xs">Yatay</span>
+                                    </button>
+                                    <button type="button" class="btn-shadcn btn-shadcn-sm btn-shadcn-outline"
+                                        onclick="distributeVertically()" title="Dikey Dağıt">
+                                        <i class="fas fa-arrows-alt-v"></i>
+                                        <span class="text-xs">Dikey</span>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- Kapasite Göstergesi -->
+                            <div class="border-t pt-4">
+                                <h4 class="text-sm font-semibold text-slate-700 dark:text-slate-200 mb-3">Kapasite Bilgisi</h4>
+                                <div class="space-y-3">
+                                    <div class="flex items-center justify-between p-3 rounded-lg bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20">
+                                        <div class="flex items-center gap-2">
+                                            <i class="fas fa-users text-blue-500"></i>
+                                            <span class="text-sm text-slate-700 dark:text-slate-200">Toplam Kapasite</span>
+                                        </div>
+                                        <span class="text-lg font-bold text-slate-900 dark:text-white" id="total-capacity">0</span>
+                                    </div>
+                                    <div class="flex items-center justify-between p-3 rounded-lg bg-slate-50 dark:bg-slate-800/50">
+                                        <div class="flex items-center gap-2">
+                                            <i class="fas fa-chair text-purple-500"></i>
+                                            <span class="text-sm text-slate-700 dark:text-slate-200">Oturum Sayısı</span>
+                                        </div>
+                                        <span class="text-lg font-bold text-slate-900 dark:text-white" id="seating-count">0</span>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -550,6 +647,83 @@
     </div>
 </div>
 
+<!-- Şablon Seçici Modal -->
+<div id="template-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/50 backdrop-blur-sm">
+    <div class="relative mx-4 w-full max-w-2xl rounded-xl bg-white shadow-2xl dark:bg-slate-900">
+        <div class="flex items-center justify-between border-b border-slate-200 p-6 dark:border-slate-700">
+            <div class="flex items-center gap-3">
+                <span class="inline-flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                    <i class="fas fa-layer-group"></i>
+                </span>
+                <div>
+                    <h3 class="text-xl font-bold text-slate-900 dark:text-white">Şablon Seç</h3>
+                    <p class="text-sm text-slate-600 dark:text-slate-400">Kayıtlı şablonlardan birini yükle</p>
+                </div>
+            </div>
+            <button type="button" onclick="closeTemplateModal()" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200">
+                <i class="fas fa-times text-xl"></i>
+            </button>
+        </div>
+        <div class="max-h-96 overflow-y-auto p-6">
+            <div id="template-list" class="space-y-3">
+                <!-- Templates will be loaded here -->
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Şablon Kaydetme Modal -->
+<div id="save-template-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/50 backdrop-blur-sm">
+    <div class="relative mx-4 w-full max-w-md rounded-xl bg-white shadow-2xl dark:bg-slate-900">
+        <div class="flex items-center justify-between border-b border-slate-200 p-6 dark:border-slate-700">
+            <div class="flex items-center gap-3">
+                <span class="inline-flex h-10 w-10 items-center justify-center rounded-lg bg-green-500/10 text-green-500">
+                    <i class="fas fa-save"></i>
+                </span>
+                <div>
+                    <h3 class="text-xl font-bold text-slate-900 dark:text-white">Şablon Kaydet</h3>
+                    <p class="text-sm text-slate-600 dark:text-slate-400">Mevcut düzeni şablon olarak kaydet</p>
+                </div>
+            </div>
+            <button type="button" onclick="closeSaveTemplateModal()" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200">
+                <i class="fas fa-times text-xl"></i>
+            </button>
+        </div>
+        <div class="p-6">
+            <form id="save-template-form" class="space-y-4">
+                <label class="space-y-2">
+                    <span class="label-shadcn">Şablon Adı</span>
+                    <input type="text" id="template-name" class="input-shadcn" placeholder="Örn: Düğün Salonu Standart" required>
+                </label>
+                <label class="space-y-2">
+                    <span class="label-shadcn">Açıklama</span>
+                    <textarea id="template-description" class="textarea-shadcn" rows="3" placeholder="Şablon hakkında kısa açıklama..."></textarea>
+                </label>
+                <label class="space-y-2">
+                    <span class="label-shadcn">Kategori</span>
+                    <select id="template-category" class="input-shadcn">
+                        <option value="general">Genel</option>
+                        <option value="wedding">Düğün</option>
+                        <option value="conference">Konferans</option>
+                        <option value="concert">Konser</option>
+                        <option value="other">Diğer</option>
+                    </select>
+                </label>
+                <div class="flex gap-3">
+                    <button type="button" onclick="closeSaveTemplateModal()" class="btn-shadcn btn-shadcn-outline flex-1">
+                        <i class="fas fa-times"></i>
+                        İptal
+                    </button>
+                    <button type="submit" class="btn-shadcn btn-shadcn-default flex-1">
+                        <i class="fas fa-save"></i>
+                        Kaydet
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
 <script src="{{ url_for('static', filename='js/visual-editor.js') }}"></script>
 <script>
     let visualEditor = null;
@@ -569,7 +743,7 @@
                 width: 800,
                 height: 600,
                 gridSize: 20,
-                stagePosition: '{{ event.stage_position or "top" }}'
+                stagePosition: '{{ event.stage_position.value if event.stage_position else "top" }}'
             } );
         }
     }
@@ -614,6 +788,8 @@
 
     function addSeatingToCanvas( seatingType ) {
         if ( visualEditor ) {
+            console.log( '🎯 Masa ekleniyor:', seatingType );
+
             const position = { x: 100, y: 100 };
             const config = {
                 name: `${seatingType.name} ${visualEditor.seatings.length + 1}`,
@@ -625,8 +801,25 @@
                 type: seatingType.seat_type
             };
 
-            visualEditor.addSeating( seatingType.seat_type, position, config );
+            console.log( '📐 Masa config:', config );
+            const result = visualEditor.addSeating( seatingType.seat_type, position, config );
+            console.log( '✅ Masa eklendi:', result );
+            console.log( '📊 Toplam masa sayısı:', visualEditor.seatings.length );
+            
+            updateCapacityInfo();
+        } else {
+            console.error( '❌ Visual editor bulunamadı!' );
         }
+    }
+
+    function updateCapacityInfo() {
+        if ( !visualEditor ) return;
+
+        const totalCapacity = visualEditor.seatings.reduce( ( sum, seat ) => sum + ( seat.capacity || 0 ), 0 );
+        const seatingCount = visualEditor.seatings.length;
+
+        document.getElementById( 'total-capacity' ).textContent = totalCapacity;
+        document.getElementById( 'seating-count' ).textContent = seatingCount;
     }
 
     function loadCurrentLayout() {
@@ -646,6 +839,7 @@
                     // Load seatings
                     if ( config.seatings && config.seatings.length > 0 ) {
                         visualEditor.loadSeatingsData( config.seatings );
+                        updateCapacityInfo();
                     }
                 }
             } )
@@ -655,24 +849,38 @@
     }
 
     function saveLayout() {
-        if ( !visualEditor ) return;
+        if ( !visualEditor ) {
+            console.error( '❌ Visual editor bulunamadı!' );
+            return;
+        }
+
+        console.log( '💾 Düzen kaydediliyor...' );
+        console.log( '📊 Mevcut masalar:', visualEditor.seatings );
 
         const config = visualEditor.getConfiguration();
+        console.log( '⚙️ Configuration:', config );
+
         const data = {
             canvas_width: parseInt( document.getElementById( 'canvas-width' ).value ),
             canvas_height: parseInt( document.getElementById( 'canvas-height' ).value ),
             grid_size: parseInt( document.getElementById( 'grid-size' ).value ),
             stage_position: config.stagePosition,
-            seats: config.seatings.map( seat => ( {
-                seating_type_id: findSeatingTypeId( seat.type, seat.capacity ),
-                seat_number: seat.name,
-                position_x: seat.x,
-                position_y: seat.y,
-                width: seat.width,
-                height: seat.height,
-                color_code: seat.color
-            } ) )
+            seats: config.seatings.map( seat => {
+                const seatingTypeId = findSeatingTypeId( seat.type, seat.capacity );
+                console.log( `🔍 Masa ${seat.name}: type=${seat.type}, capacity=${seat.capacity}, seating_type_id=${seatingTypeId}` );
+                return {
+                    seating_type_id: seatingTypeId,
+                    seat_number: seat.name,
+                    position_x: seat.x,
+                    position_y: seat.y,
+                    width: seat.width,
+                    height: seat.height,
+                    color_code: seat.color
+                };
+            } )
         };
+
+        console.log( '📤 Gönderilecek data:', data );
 
         fetch( `/event/{{ event.id }}/save-layout`, {
             method: 'POST',
@@ -681,8 +889,12 @@
             },
             body: JSON.stringify( data )
         } )
-            .then( response => response.json() )
+            .then( response => {
+                console.log( '📥 Response status:', response.status );
+                return response.json();
+            } )
             .then( result => {
+                console.log( '📥 Response:', result );
                 if ( result.success ) {
                     showNotification( 'Görsel plan başarıyla kaydedildi!', 'success' );
                 } else {
@@ -690,7 +902,7 @@
                 }
             } )
             .catch( error => {
-                console.error( 'Error saving layout:', error );
+                console.error( '❌ Error saving layout:', error );
                 showNotification( 'Kaydetme sırasında hata oluştu', 'error' );
             } );
     }
@@ -732,22 +944,127 @@
         if ( visualEditor ) visualEditor.zoomReset();
     }
 
+    function toggleGrid() {
+        if ( !visualEditor ) return;
+
+        visualEditor.gridVisible = !visualEditor.gridVisible;
+
+        // Update button style
+        const btn = document.getElementById( 'toggle-grid-btn' );
+        if ( visualEditor.gridVisible ) {
+            btn.classList.add( 'btn-shadcn-default' );
+            btn.classList.remove( 'btn-shadcn-outline' );
+            visualEditor.gridCanvas.style.display = 'block';
+        } else {
+            btn.classList.remove( 'btn-shadcn-default' );
+            btn.classList.add( 'btn-shadcn-outline' );
+            visualEditor.gridCanvas.style.display = 'none';
+        }
+    }
+
     function clearCanvas() {
         if ( visualEditor && confirm( 'Tüm oturumları silmek istediğinizden emin misiniz?' ) ) {
             visualEditor.seatings = [];
             visualEditor.draw();
+            updateCapacityInfo();
         }
     }
 
-    function saveAsTemplate() {
-        const name = prompt( 'Şablon adını giriniz:' );
-        if ( !name ) return;
+    function duplicateSelected() {
+        if ( !visualEditor || !visualEditor.selectedSeating ) {
+            showNotification( 'Önce bir oturum seçin', 'info' );
+            return;
+        }
 
-        const config = visualEditor.getConfiguration();
+        visualEditor.duplicateSeating( visualEditor.selectedSeating );
+        updateCapacityInfo();
+        showNotification( 'Oturum çoğaltıldı', 'success' );
+    }
+
+    // Alignment functions
+    function alignLeft() {
+        if ( !visualEditor ) return;
+        visualEditor.alignLeft();
+        showNotification( 'Sola hizalandı', 'success' );
+    }
+
+    function alignRight() {
+        if ( !visualEditor ) return;
+        visualEditor.alignRight();
+        showNotification( 'Sağa hizalandı', 'success' );
+    }
+
+    function alignTop() {
+        if ( !visualEditor ) return;
+        visualEditor.alignTop();
+        showNotification( 'Üste hizalandı', 'success' );
+    }
+
+    function alignBottom() {
+        if ( !visualEditor ) return;
+        visualEditor.alignBottom();
+        showNotification( 'Alta hizalandı', 'success' );
+    }
+
+    function alignCenter() {
+        if ( !visualEditor ) return;
+        visualEditor.alignCenter();
+        showNotification( 'Ortaya hizalandı', 'success' );
+    }
+
+    function alignMiddle() {
+        if ( !visualEditor ) return;
+        visualEditor.alignMiddle();
+        showNotification( 'Dikey ortalandı', 'success' );
+    }
+
+    // Distribution functions
+    function distributeHorizontally() {
+        if ( !visualEditor ) return;
+        if ( visualEditor.seatings.length < 3 ) {
+            showNotification( 'En az 3 oturum gerekli', 'warning' );
+            return;
+        }
+        visualEditor.distributeHorizontally();
+        showNotification( 'Yatay dağıtıldı', 'success' );
+    }
+
+    function distributeVertically() {
+        if ( !visualEditor ) return;
+        if ( visualEditor.seatings.length < 3 ) {
+            showNotification( 'En az 3 oturum gerekli', 'warning' );
+            return;
+        }
+        visualEditor.distributeVertically();
+        showNotification( 'Dikey dağıtıldı', 'success' );
+    }
+
+    function saveAsTemplate() {
+        if ( !visualEditor || visualEditor.seatings.length === 0 ) {
+            showNotification( 'Kaydetmek için en az bir oturum ekleyin', 'warning' );
+            return;
+        }
+        openSaveTemplateModal();
+    }
+
+    function openSaveTemplateModal() {
+        document.getElementById( 'save-template-modal' ).classList.remove( 'hidden' );
+        document.getElementById( 'save-template-modal' ).classList.add( 'flex' );
+    }
+
+    function closeSaveTemplateModal() {
+        document.getElementById( 'save-template-modal' ).classList.add( 'hidden' );
+        document.getElementById( 'save-template-modal' ).classList.remove( 'flex' );
+        document.getElementById( 'save-template-form' ).reset();
+    }
+
+    document.getElementById( 'save-template-form' ).addEventListener( 'submit', function ( e ) {
+        e.preventDefault();
+
         const data = {
-            name: name,
-            description: `Otomatik oluşturulan şablon - ${new Date().toLocaleDateString()}`,
-            category: 'general'
+            name: document.getElementById( 'template-name' ).value,
+            description: document.getElementById( 'template-description' ).value,
+            category: document.getElementById( 'template-category' ).value
         };
 
         fetch( `/event/{{ event.id }}/template/save`, {
@@ -761,6 +1078,7 @@
             .then( result => {
                 if ( result.success ) {
                     showNotification( 'Şablon başarıyla kaydedildi!', 'success' );
+                    closeSaveTemplateModal();
                 } else {
                     showNotification( 'Şablon kaydetme hatası: ' + result.message, 'error' );
                 }
@@ -769,12 +1087,64 @@
                 console.error( 'Error saving template:', error );
                 showNotification( 'Şablon kaydetme sırasında hata oluştu', 'error' );
             } );
+    } );
+
+    function openTemplateModal() {
+        document.getElementById( 'template-modal' ).classList.remove( 'hidden' );
+        document.getElementById( 'template-modal' ).classList.add( 'flex' );
+        loadTemplateList();
     }
 
-    function loadFromTemplate() {
-        // Simple prompt for now - in production this would be a proper template selector
-        const templateId = prompt( 'Yüklenecek şablon ID\'sini giriniz:' );
-        if ( !templateId ) return;
+    function closeTemplateModal() {
+        document.getElementById( 'template-modal' ).classList.add( 'hidden' );
+        document.getElementById( 'template-modal' ).classList.remove( 'flex' );
+    }
+
+    function loadTemplateList() {
+        fetch( '/template/api/list' )
+            .then( response => response.json() )
+            .then( data => {
+                const templateList = document.getElementById( 'template-list' );
+                
+                if ( !data.templates || data.templates.length === 0 ) {
+                    templateList.innerHTML = `
+                        <div class="text-center py-8">
+                            <i class="fas fa-inbox text-4xl text-slate-300 dark:text-slate-600 mb-3"></i>
+                            <p class="text-slate-600 dark:text-slate-400">Henüz kayıtlı şablon yok</p>
+                        </div>
+                    `;
+                    return;
+                }
+
+                templateList.innerHTML = data.templates.map( template => `
+                    <div class="flex items-center justify-between p-4 border border-slate-200 rounded-lg hover:border-primary transition dark:border-slate-700">
+                        <div class="flex-1">
+                            <h4 class="font-semibold text-slate-900 dark:text-white">${template.name}</h4>
+                            <p class="text-sm text-slate-600 dark:text-slate-400">${template.description || 'Açıklama yok'}</p>
+                            <div class="flex items-center gap-3 mt-2">
+                                <span class="text-xs px-2 py-1 rounded bg-primary/10 text-primary">${template.category || 'Genel'}</span>
+                                <span class="text-xs text-slate-500">${template.seating_count || 0} oturum</span>
+                            </div>
+                        </div>
+                        <button type="button" onclick="loadFromTemplate(${template.id})" class="btn-shadcn btn-shadcn-sm btn-shadcn-default">
+                            <i class="fas fa-download"></i>
+                            Yükle
+                        </button>
+                    </div>
+                `).join( '' );
+            } )
+            .catch( error => {
+                console.error( 'Error loading templates:', error );
+                showNotification( 'Şablonlar yüklenemedi', 'error' );
+            } );
+    }
+
+    function loadFromTemplate( templateId ) {
+        if ( visualEditor.seatings.length > 0 ) {
+            if ( !confirm( 'Mevcut düzen silinecek. Devam etmek istiyor musunuz?' ) ) {
+                return;
+            }
+        }
 
         fetch( `/event/template/${templateId}/load`, {
             method: 'POST'
@@ -783,7 +1153,9 @@
             .then( result => {
                 if ( result.success && visualEditor ) {
                     visualEditor.loadConfiguration( result.data );
+                    updateCapacityInfo();
                     showNotification( 'Şablon başarıyla yüklendi!', 'success' );
+                    closeTemplateModal();
                 } else {
                     showNotification( 'Şablon yükleme hatası: ' + result.message, 'error' );
                 }

@@ -135,3 +135,45 @@ def delete_event_template(template_id):
     flash('Şablon silindi.', 'success')
     return redirect(url_for('template.event_templates'))
 
+@bp.route('/api/list', methods=['GET'])
+@login_required
+@admin_required
+def api_list_templates():
+    """API endpoint to list all seating layout templates"""
+    try:
+        templates = SeatingLayoutTemplate.query.filter_by(
+            company_id=current_user.company_id
+        ).order_by(SeatingLayoutTemplate.created_at.desc()).all()
+        
+        template_list = []
+        for template in templates:
+            # Parse configuration to get seating count
+            seating_count = 0
+            try:
+                config = json.loads(template.configuration) if template.configuration else {}
+                seatings = config.get('seatings', [])
+                seating_count = len(seatings)
+            except:
+                pass
+            
+            template_list.append({
+                'id': template.id,
+                'name': template.name,
+                'description': template.description,
+                'category': template.category,
+                'stage_position': template.stage_position,
+                'seating_count': seating_count,
+                'created_at': template.created_at.strftime('%d.%m.%Y %H:%M') if template.created_at else None
+            })
+        
+        return jsonify({
+            'success': True,
+            'templates': template_list
+        })
+        
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'message': str(e)
+        }), 500
+

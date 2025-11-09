@@ -31,9 +31,12 @@ RUN mkdir -p /app/app/static/uploads/qr && \
 # Port tanımla
 EXPOSE 5000
 
+# start.sh'ı executable yap
+RUN chmod +x /app/start.sh
+
 # Health check ekle
 HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
-    CMD curl -f http://localhost:5000/ || exit 1
+    CMD curl -f http://localhost:${PORT:-5000}/ || exit 1
 
-# Uygulamayı başlat
-CMD ["python", "run.py"]
+# Uygulamayı başlat (Railway'de start.sh kullan)
+CMD ["bash", "/app/start.sh"]

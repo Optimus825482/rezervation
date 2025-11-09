@@ -4,6 +4,7 @@ from flask_login import login_required, current_user
 from marshmallow import ValidationError
 from app import db
 from app.models import Event, EventSeating, SeatingType
+from app.models.event import StagePosition, EventStatus
 from app.models.reservation import Reservation, ReservationStatus
 from app.models.seating import SeatingLayoutTemplate
 from app.utils.decorators import admin_required
@@ -93,15 +94,30 @@ def edit(event_id):
             event.venue_name = request.form.get('venue_name', event.venue_name)
             event.venue_type = request.form.get('venue_type', event.venue_type)
             event.event_type = request.form.get('event_type', event.event_type)
-            event.venue_width = float(request.form.get('venue_width', event.venue_width or 0))
-            event.venue_length = float(request.form.get('venue_length', event.venue_length or 0))
-            event.stage_position = request.form.get('stage_position', event.stage_position)
             
-            # Handle status change
+            # Safely convert venue dimensions (handle empty strings)
+            venue_width_str = request.form.get('venue_width', '').strip()
+            venue_length_str = request.form.get('venue_length', '').strip()
+            event.venue_width = float(venue_width_str) if venue_width_str else (event.venue_width or 0)
+            event.venue_length = float(venue_length_str) if venue_length_str else (event.venue_length or 0)
+            
+            # Stage position - convert string to Enum
+            stage_pos_str = request.form.get('stage_position')
+            if stage_pos_str:
+                try:
+                    event.stage_position = StagePosition(stage_pos_str)
+                except ValueError:
+                    # Keep existing value if invalid
+                    pass
+            
+            # Handle status change - convert string to Enum
             new_status = request.form.get('status')
             if new_status and new_status in ['draft', 'active', 'completed', 'cancelled']:
                 old_status = event.status
-                event.status = new_status
+                try:
+                    event.status = EventStatus(new_status.upper())
+                except ValueError:
+                    event.status = EventStatus.DRAFT
                 
                 # If cancelling event, also cancel all active reservations
                 if new_status == 'cancelled' and old_status != 'cancelled':
@@ -231,23 +247,39 @@ def save_layout(event_id):
     ).first_or_404()
     
     data = request.get_json()
+    print(f"🔍 save_layout called for event {event_id}")
+    print(f"📥 Received data: {data}")
     
     try:
         # Delete existing seatings
-        EventSeating.query.filter_by(event_id=event.id).delete()
+        deleted_count = EventSeating.query.filter_by(event_id=event.id).delete()
+        print(f"🗑️ Deleted {deleted_count} existing seatings")
         
         # Save stage configuration
         if data.get('stage'):
             event.stage_config = json.dumps(data['stage'])
-            event.stage_position = data.get('stage_position', 'top')
+            print(f"🎭 Stage config saved")
+        
+        # Save stage position (convert string to Enum)
+        stage_pos = data.get('stage_position', 'top')
+        if isinstance(stage_pos, str):
+            event.stage_position = StagePosition(stage_pos)
+        else:
+            event.stage_position = stage_pos
+        print(f"📍 Stage position: {event.stage_position.value if event.stage_position else 'None'}")
         
         # Save canvas dimensions and grid settings
         event.canvas_width = data.get('canvas_width', 800)
         event.canvas_height = data.get('canvas_height', 600)
         event.grid_size = data.get('grid_size', 20)
+        print(f"📐 Canvas: {event.canvas_width}x{event.canvas_height}, Grid: {event.grid_size}")
         
         # Save enhanced seatings with visual editor properties
-        for seat_data in data.get('seats', []):
+        seats_data = data.get('seats', [])
+        print(f"💺 Saving {len(seats_data)} seatings")
+        
+        for idx, seat_data in enumerate(seats_data):
+            print(f"  {idx+1}. {seat_data.get('seat_number')}: type_id={seat_data.get('seating_type_id')}, pos=({seat_data.get('position_x')}, {seat_data.get('position_y')})")
             seating = EventSeating(
                 event_id=event.id,
                 seating_type_id=seat_data['seating_type_id'],
@@ -261,10 +293,14 @@ def save_layout(event_id):
             db.session.add(seating)
         
         db.session.commit()
+        print(f"✅ Layout saved successfully!")
         return jsonify({'success': True, 'message': 'Görsel yerleşim planı kaydedildi'})
         
     except Exception as e:
         db.session.rollback()
+        print(f"❌ Error saving layout: {str(e)}")
+        import traceback
+        traceback.print_exc()
         return jsonify({'success': False, 'message': str(e)}), 500
 
 @bp.route('/<int:event_id>/seating-config', methods=['GET', 'POST'])
