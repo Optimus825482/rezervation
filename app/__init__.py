@@ -182,6 +182,28 @@ def create_app(config_name='default'):
             return redirect(f'/template/seating/{subpath}', code=301)
         return redirect(url_for('template.seating_templates'), code=301)
     
+    # Health check endpoint for Railway
+    @app.route('/health')
+    def health_check():
+        """Health check endpoint for Railway deployment"""
+        from flask import jsonify
+        try:
+            # Test database connection
+            db.session.execute(db.text('SELECT 1'))
+            db_status = 'healthy'
+        except Exception as e:
+            db_status = f'unhealthy: {str(e)}'
+            return jsonify({
+                'status': 'unhealthy',
+                'database': db_status
+            }), 503
+        
+        return jsonify({
+            'status': 'healthy',
+            'database': db_status,
+            'environment': app.config.get('ENV', 'unknown')
+        }), 200
+    
     # Offline page for PWA
     @app.route('/offline.html')
     def offline():

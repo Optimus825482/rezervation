@@ -23,7 +23,7 @@
     </div>
 
     <div class="grid gap-6 lg:grid-cols-[2fr,1fr]">
-        <form method="POST" action="{{ url_for('event.edit', event_id=event.id) }}" class="space-y-6">
+        <form method="POST" action="{{ url_for('event.edit', event_id=event.id) }}" class="space-y-6 order-2 lg:order-1"></form>
             <!-- Temel Bilgiler -->
             <section class="card-shadcn">
                 <div class="card-shadcn-header pb-4">
@@ -278,22 +278,24 @@
                 <div class="card-shadcn-content">
                     <div class="grid gap-6 lg:grid-cols-[1fr,300px]">
                         <!-- Visual Editor Container -->
-                        <div class="space-y-4">
+                        <div class="space-y-4 order-2 lg:order-1">
                             <div id="visual-editor-container" class="visual-editor-wrapper">
-                                <div class="flex items-center justify-between mb-4">
+                                <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-4">
                                     <h3 class="text-lg font-semibold">Oturum Planı</h3>
-                                    <div class="flex gap-2">
-                                        <button type="button" class="btn-shadcn btn-shadcn-sm btn-shadcn-outline"
+                                    <div class="flex flex-wrap gap-2 w-full sm:w-auto"></div>
+                                        <button type="button" class="btn-shadcn btn-shadcn-sm btn-shadcn-outline flex-1 sm:flex-none"
                                             onclick="openTemplateModal()">
                                             <i class="fas fa-download"></i>
-                                            Şablondan Yükle
+                                            <span class="hidden sm:inline">Şablondan Yükle</span>
+                                            <span class="sm:hidden">Yükle</span>
                                         </button>
-                                        <button type="button" class="btn-shadcn btn-shadcn-sm btn-shadcn-outline"
+                                        <button type="button" class="btn-shadcn btn-shadcn-sm btn-shadcn-outline flex-1 sm:flex-none"
                                             onclick="saveAsTemplate()">
                                             <i class="fas fa-save"></i>
-                                            Şablon Kaydet
+                                            <span class="hidden sm:inline">Şablon Kaydet</span>
+                                            <span class="sm:hidden">Kaydet</span>
                                         </button>
-                                        <button type="button" class="btn-shadcn btn-shadcn-sm btn-shadcn-default"
+                                        <button type="button" class="btn-shadcn btn-shadcn-sm btn-shadcn-default flex-1 sm:flex-none"
                                             onclick="saveLayout()">
                                             <i class="fas fa-check"></i>
                                             Kaydet
@@ -301,14 +303,14 @@
                                     </div>
                                 </div>
                                 <div id="visual-seating-editor"
-                                    class="border border-slate-200 rounded-lg bg-white dark:border-slate-700 dark:bg-slate-800">
+                                    class="border border-slate-200 rounded-lg bg-white dark:border-slate-700 dark:bg-slate-800 overflow-x-auto">
                                     <!-- Visual editor will be initialized here -->
                                 </div>
                             </div>
                         </div>
 
                         <!-- Oturum Tipleri Paneli -->
-                        <div class="space-y-4">
+                        <div class="space-y-4 order-1 lg:order-2"></div>
                             <h3 class="text-lg font-semibold flex items-center gap-2">
                                 <i class="fas fa-layer-group text-purple-500"></i>
                                 Oturum Tipleri
@@ -348,7 +350,7 @@
                             <!-- Araçlar -->
                             <div class="border-t pt-4">
                                 <h4 class="text-sm font-semibold text-slate-700 dark:text-slate-200 mb-3">Araçlar</h4>
-                                <div class="grid grid-cols-2 gap-2">
+                                <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-2 gap-2"></div>
                                     <button type="button" class="btn-shadcn btn-shadcn-sm btn-shadcn-outline"
                                         onclick="undoAction()" id="undo-btn" title="Geri Al (Ctrl+Z)">
                                         <i class="fas fa-undo"></i>
@@ -460,6 +462,87 @@
                                     </div>
                                 </div>
                             </div>
+
+                            <!-- Seçili Oturum Bilgisi -->
+                            <div class="border-t pt-4" id="selected-seating-panel" style="display: none;">
+                                <h4 class="text-sm font-semibold text-slate-700 dark:text-slate-200 mb-3 flex items-center gap-2">
+                                    <i class="fas fa-info-circle text-blue-500"></i>
+                                    Seçili Oturum
+                                </h4>
+                                <div class="space-y-3 p-3 rounded-lg bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800">
+                                    <div class="flex items-center justify-between">
+                                        <span class="text-xs text-slate-600 dark:text-slate-400">Ad:</span>
+                                        <span class="text-sm font-medium text-slate-900 dark:text-white" id="selected-name">-</span>
+                                    </div>
+                                    <div class="flex items-center justify-between">
+                                        <span class="text-xs text-slate-600 dark:text-slate-400">Tip:</span>
+                                        <span class="text-sm font-medium text-slate-900 dark:text-white" id="selected-type">-</span>
+                                    </div>
+                                    <div class="flex items-center justify-between">
+                                        <span class="text-xs text-slate-600 dark:text-slate-400">Kapasite:</span>
+                                        <span class="text-sm font-medium text-slate-900 dark:text-white" id="selected-capacity">-</span>
+                                    </div>
+                                    <div class="flex items-center justify-between">
+                                        <span class="text-xs text-slate-600 dark:text-slate-400">Pozisyon:</span>
+                                        <span class="text-sm font-medium text-slate-900 dark:text-white" id="selected-position">-</span>
+                                    </div>
+                                    <div class="flex items-center justify-between">
+                                        <span class="text-xs text-slate-600 dark:text-slate-400">Boyut:</span>
+                                        <span class="text-sm font-medium text-slate-900 dark:text-white" id="selected-size">-</span>
+                                    </div>
+                                    <div class="flex items-center justify-between">
+                                        <span class="text-xs text-slate-600 dark:text-slate-400">Renk:</span>
+                                        <div class="flex items-center gap-2">
+                                            <div id="selected-color-box" class="w-6 h-6 rounded border border-slate-300 dark:border-slate-600"></div>
+                                            <span class="text-xs font-mono text-slate-600 dark:text-slate-400" id="selected-color-code">-</span>
+                                        </div>
+                                    </div>
+                                    <div class="grid grid-cols-2 gap-2 pt-2 border-t border-blue-200 dark:border-blue-800">
+                                        <button type="button" onclick="editSelectedSeating()" class="btn-shadcn btn-shadcn-sm btn-shadcn-default">
+                                            <i class="fas fa-edit"></i>
+                                            Düzenle
+                                        </button>
+                                        <button type="button" onclick="deleteSelectedSeating()" class="btn-shadcn btn-shadcn-sm btn-shadcn-outline text-red-600 border-red-300">
+                                            <i class="fas fa-trash"></i>
+                                            Sil
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Klavye Kısayolları -->
+                            <div class="border-t pt-4">
+                                <h4 class="text-sm font-semibold text-slate-700 dark:text-slate-200 mb-3 flex items-center gap-2">
+                                    <i class="fas fa-keyboard text-purple-500"></i>
+                                    Klavye Kısayolları
+                                </h4>
+                                <div class="space-y-2 text-xs text-slate-600 dark:text-slate-400">
+                                    <div class="flex items-center justify-between">
+                                        <span>Çoğalt:</span>
+                                        <kbd class="px-2 py-1 bg-slate-100 dark:bg-slate-800 rounded border border-slate-300 dark:border-slate-600">Ctrl+D</kbd>
+                                    </div>
+                                    <div class="flex items-center justify-between">
+                                        <span>Sil:</span>
+                                        <kbd class="px-2 py-1 bg-slate-100 dark:bg-slate-800 rounded border border-slate-300 dark:border-slate-600">Delete</kbd>
+                                    </div>
+                                    <div class="flex items-center justify-between">
+                                        <span>Geri Al:</span>
+                                        <kbd class="px-2 py-1 bg-slate-100 dark:bg-slate-800 rounded border border-slate-300 dark:border-slate-600">Ctrl+Z</kbd>
+                                    </div>
+                                    <div class="flex items-center justify-between">
+                                        <span>İleri Al:</span>
+                                        <kbd class="px-2 py-1 bg-slate-100 dark:bg-slate-800 rounded border border-slate-300 dark:border-slate-600">Ctrl+Y</kbd>
+                                    </div>
+                                    <div class="flex items-center justify-between">
+                                        <span>Hareket:</span>
+                                        <kbd class="px-2 py-1 bg-slate-100 dark:bg-slate-800 rounded border border-slate-300 dark:border-slate-600">↑↓←→</kbd>
+                                    </div>
+                                    <div class="flex items-center justify-between">
+                                        <span>Seçimi Kaldır:</span>
+                                        <kbd class="px-2 py-1 bg-slate-100 dark:bg-slate-800 rounded border border-slate-300 dark:border-slate-600">Esc</kbd>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -560,7 +643,7 @@
             </section>
         </form>
 
-        <aside class="space-y-6">
+        <aside class="space-y-6 order-1 lg:order-2"></aside>
             <!-- Etkinlik Durumu -->
             <div class="card-shadcn">
                 <div class="card-shadcn-content space-y-4">
@@ -648,8 +731,8 @@
 </div>
 
 <!-- Şablon Seçici Modal -->
-<div id="template-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/50 backdrop-blur-sm">
-    <div class="relative mx-4 w-full max-w-2xl rounded-xl bg-white shadow-2xl dark:bg-slate-900">
+<div id="template-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+    <div class="relative w-full max-w-2xl rounded-xl bg-white shadow-2xl dark:bg-slate-900 max-h-[90vh] overflow-hidden flex flex-col"></div>
         <div class="flex items-center justify-between border-b border-slate-200 p-6 dark:border-slate-700">
             <div class="flex items-center gap-3">
                 <span class="inline-flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 text-primary">
@@ -664,7 +747,7 @@
                 <i class="fas fa-times text-xl"></i>
             </button>
         </div>
-        <div class="max-h-96 overflow-y-auto p-6">
+        <div class="flex-1 overflow-y-auto p-6">
             <div id="template-list" class="space-y-3">
                 <!-- Templates will be loaded here -->
             </div>
@@ -673,8 +756,8 @@
 </div>
 
 <!-- Şablon Kaydetme Modal -->
-<div id="save-template-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/50 backdrop-blur-sm">
-    <div class="relative mx-4 w-full max-w-md rounded-xl bg-white shadow-2xl dark:bg-slate-900">
+<div id="save-template-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+    <div class="relative w-full max-w-md rounded-xl bg-white shadow-2xl dark:bg-slate-900 max-h-[90vh] overflow-hidden flex flex-col"></div>
         <div class="flex items-center justify-between border-b border-slate-200 p-6 dark:border-slate-700">
             <div class="flex items-center gap-3">
                 <span class="inline-flex h-10 w-10 items-center justify-center rounded-lg bg-green-500/10 text-green-500">
@@ -689,7 +772,7 @@
                 <i class="fas fa-times text-xl"></i>
             </button>
         </div>
-        <div class="p-6">
+        <div class="flex-1 overflow-y-auto p-6"></div>
             <form id="save-template-form" class="space-y-4">
                 <label class="space-y-2">
                     <span class="label-shadcn">Şablon Adı</span>
@@ -724,6 +807,103 @@
     </div>
 </div>
 
+<!-- Oturum Düzenleme Modal -->
+<div id="edit-seating-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+    <div class="relative w-full max-w-md rounded-xl bg-white shadow-2xl dark:bg-slate-900 max-h-[90vh] overflow-hidden flex flex-col"></div>
+        <div class="flex items-center justify-between border-b border-slate-200 p-6 dark:border-slate-700">
+            <div class="flex items-center gap-3">
+                <span class="inline-flex h-10 w-10 items-center justify-center rounded-lg bg-blue-500/10 text-blue-500">
+                    <i class="fas fa-edit"></i>
+                </span>
+                <div>
+                    <h3 class="text-xl font-bold text-slate-900 dark:text-white">Oturum Düzenle</h3>
+                    <p class="text-sm text-slate-600 dark:text-slate-400">Oturum özelliklerini güncelle</p>
+                </div>
+            </div>
+            <button type="button" onclick="closeEditSeatingModal()" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200">
+                <i class="fas fa-times text-xl"></i>
+            </button>
+        </div>
+        <div class="flex-1 overflow-y-auto p-6"></div>
+            <form id="edit-seating-form" class="space-y-4">
+                <label class="space-y-2">
+                    <span class="label-shadcn flex items-center gap-2">
+                        <i class="fas fa-signature text-blue-500"></i>
+                        Oturum Adı
+                    </span>
+                    <input type="text" id="edit-seating-name" class="input-shadcn" placeholder="Örn: Masa 1" required>
+                </label>
+                <label class="space-y-2">
+                    <span class="label-shadcn flex items-center gap-2">
+                        <i class="fas fa-users text-blue-500"></i>
+                        Kapasite
+                    </span>
+                    <input type="number" id="edit-seating-capacity" class="input-shadcn" min="1" max="100" required>
+                </label>
+                <div class="grid grid-cols-2 gap-4">
+                    <label class="space-y-2">
+                        <span class="label-shadcn flex items-center gap-2">
+                            <i class="fas fa-arrows-alt-h text-blue-500"></i>
+                            Genişlik
+                        </span>
+                        <input type="number" id="edit-seating-width" class="input-shadcn" min="20" max="200" required>
+                    </label>
+                    <label class="space-y-2">
+                        <span class="label-shadcn flex items-center gap-2">
+                            <i class="fas fa-arrows-alt-v text-blue-500"></i>
+                            Yükseklik
+                        </span>
+                        <input type="number" id="edit-seating-height" class="input-shadcn" min="20" max="200" required>
+                    </label>
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                    <label class="space-y-2">
+                        <span class="label-shadcn flex items-center gap-2">
+                            <i class="fas fa-map-marker-alt text-blue-500"></i>
+                            X Pozisyon
+                        </span>
+                        <input type="number" id="edit-seating-x" class="input-shadcn" min="0" required>
+                    </label>
+                    <label class="space-y-2">
+                        <span class="label-shadcn flex items-center gap-2">
+                            <i class="fas fa-map-marker-alt text-blue-500"></i>
+                            Y Pozisyon
+                        </span>
+                        <input type="number" id="edit-seating-y" class="input-shadcn" min="0" required>
+                    </label>
+                </div>
+                <label class="space-y-2">
+                    <span class="label-shadcn flex items-center gap-2">
+                        <i class="fas fa-palette text-blue-500"></i>
+                        Renk
+                    </span>
+                    <div class="flex gap-2">
+                        <input type="color" id="edit-seating-color" class="h-10 w-20 rounded border border-slate-300 dark:border-slate-600 cursor-pointer">
+                        <input type="text" id="edit-seating-color-text" class="input-shadcn flex-1 font-mono" placeholder="#3498db" pattern="^#[0-9A-Fa-f]{6}$">
+                    </div>
+                </label>
+                <label class="space-y-2">
+                    <span class="label-shadcn flex items-center gap-2">
+                        <i class="fas fa-smile text-blue-500"></i>
+                        İkon
+                    </span>
+                    <input type="text" id="edit-seating-icon" class="input-shadcn" placeholder="🪑" maxlength="2">
+                </label>
+                <div class="flex gap-3 pt-2">
+                    <button type="button" onclick="closeEditSeatingModal()" class="btn-shadcn btn-shadcn-outline flex-1">
+                        <i class="fas fa-times"></i>
+                        İptal
+                    </button>
+                    <button type="submit" class="btn-shadcn btn-shadcn-default flex-1">
+                        <i class="fas fa-check"></i>
+                        Kaydet
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
 <script src="{{ url_for('static', filename='js/visual-editor.js') }}"></script>
 <script>
     let visualEditor = null;
@@ -739,14 +919,47 @@
     function initializeVisualEditor() {
         const container = document.getElementById( 'visual-seating-editor' );
         if ( container ) {
+            // Responsive canvas boyutu
+            const containerWidth = container.parentElement.offsetWidth;
+            const canvasWidth = Math.min( 800, containerWidth - 40 );
+            const canvasHeight = Math.min( 600, window.innerHeight * 0.6 );
+
             visualEditor = new VisualSeatingEditor( 'visual-seating-editor', {
-                width: 800,
-                height: 600,
+                width: canvasWidth,
+                height: canvasHeight,
                 gridSize: 20,
                 stagePosition: '{{ event.stage_position.value if event.stage_position else "top" }}'
             } );
+
+            // Canvas boyutunu input'lara yaz
+            document.getElementById( 'canvas-width' ).value = canvasWidth;
+            document.getElementById( 'canvas-height' ).value = canvasHeight;
         }
     }
+
+    // Window resize event
+    let resizeTimeout;
+    window.addEventListener( 'resize', function () {
+        clearTimeout( resizeTimeout );
+        resizeTimeout = setTimeout( function () {
+            if ( visualEditor ) {
+                const container = document.getElementById( 'visual-seating-editor' );
+                const containerWidth = container.parentElement.offsetWidth;
+                const newWidth = Math.min( 800, containerWidth - 40 );
+                
+                // Sadece önemli değişikliklerde yeniden oluştur
+                if ( Math.abs( visualEditor.config.width - newWidth ) > 50 ) {
+                    const currentData = visualEditor.getConfiguration();
+                    visualEditor.config.width = newWidth;
+                    container.innerHTML = '';
+                    initializeVisualEditor();
+                    if ( currentData.seatings.length > 0 ) {
+                        visualEditor.loadConfiguration( currentData );
+                    }
+                }
+            }
+        }, 500 );
+    } );
 
     function loadSeatingTypes() {
         fetch( `/event/{{ event.id }}/seating-config` )
@@ -1283,10 +1496,160 @@
         }
     }
 
+    // Seçili oturum bilgilerini güncelle
+    function updateSelectedSeatingInfo() {
+        const panel = document.getElementById( 'selected-seating-panel' );
+        
+        if ( !visualEditor || !visualEditor.selectedSeating ) {
+            panel.style.display = 'none';
+            return;
+        }
+
+        const seating = visualEditor.selectedSeating;
+        panel.style.display = 'block';
+
+        document.getElementById( 'selected-name' ).textContent = seating.name || '-';
+        document.getElementById( 'selected-type' ).textContent = seating.type || '-';
+        document.getElementById( 'selected-capacity' ).textContent = seating.capacity || '-';
+        document.getElementById( 'selected-position' ).textContent = `${Math.round(seating.x)}, ${Math.round(seating.y)}`;
+        document.getElementById( 'selected-size' ).textContent = `${seating.width} × ${seating.height}`;
+        
+        const colorBox = document.getElementById( 'selected-color-box' );
+        colorBox.style.backgroundColor = seating.color || '#3498db';
+        document.getElementById( 'selected-color-code' ).textContent = seating.color || '#3498db';
+    }
+
+    // Seçili oturumu düzenle
+    function editSelectedSeating() {
+        if ( !visualEditor || !visualEditor.selectedSeating ) {
+            showNotification( 'Önce bir oturum seçin', 'info' );
+            return;
+        }
+
+        const seating = visualEditor.selectedSeating;
+        
+        // Modal'ı doldur
+        document.getElementById( 'edit-seating-name' ).value = seating.name || '';
+        document.getElementById( 'edit-seating-capacity' ).value = seating.capacity || 1;
+        document.getElementById( 'edit-seating-width' ).value = seating.width || 60;
+        document.getElementById( 'edit-seating-height' ).value = seating.height || 40;
+        document.getElementById( 'edit-seating-x' ).value = Math.round( seating.x ) || 0;
+        document.getElementById( 'edit-seating-y' ).value = Math.round( seating.y ) || 0;
+        document.getElementById( 'edit-seating-color' ).value = seating.color || '#3498db';
+        document.getElementById( 'edit-seating-color-text' ).value = seating.color || '#3498db';
+        document.getElementById( 'edit-seating-icon' ).value = seating.icon || '🪑';
+
+        // Modal'ı aç
+        openEditSeatingModal();
+    }
+
+    // Seçili oturumu sil
+    function deleteSelectedSeating() {
+        if ( !visualEditor || !visualEditor.selectedSeating ) {
+            showNotification( 'Önce bir oturum seçin', 'info' );
+            return;
+        }
+
+        if ( !confirm( 'Bu oturumu silmek istediğinizden emin misiniz?' ) ) {
+            return;
+        }
+
+        const index = visualEditor.seatings.indexOf( visualEditor.selectedSeating );
+        if ( index > -1 ) {
+            visualEditor.seatings.splice( index, 1 );
+            visualEditor.selectedSeating = null;
+            visualEditor.draw();
+            updateCapacityInfo();
+            updateSelectedSeatingInfo();
+            showNotification( 'Oturum silindi', 'success' );
+        }
+    }
+
+    // Modal fonksiyonları
+    function openEditSeatingModal() {
+        document.getElementById( 'edit-seating-modal' ).classList.remove( 'hidden' );
+        document.getElementById( 'edit-seating-modal' ).classList.add( 'flex' );
+    }
+
+    function closeEditSeatingModal() {
+        document.getElementById( 'edit-seating-modal' ).classList.add( 'hidden' );
+        document.getElementById( 'edit-seating-modal' ).classList.remove( 'flex' );
+    }
+
+    // Modal backdrop click to close
+    document.getElementById( 'edit-seating-modal' ).addEventListener( 'click', function ( e ) {
+        if ( e.target === this ) {
+            closeEditSeatingModal();
+        }
+    } );
+
+    document.getElementById( 'save-template-modal' ).addEventListener( 'click', function ( e ) {
+        if ( e.target === this ) {
+            closeSaveTemplateModal();
+        }
+    } );
+
+    document.getElementById( 'template-modal' ).addEventListener( 'click', function ( e ) {
+        if ( e.target === this ) {
+            closeTemplateModal();
+        }
+    } );
+
+    // Oturum düzenleme form submit
+    document.getElementById( 'edit-seating-form' ).addEventListener( 'submit', function ( e ) {
+        e.preventDefault();
+
+        if ( !visualEditor || !visualEditor.selectedSeating ) {
+            return;
+        }
+
+        const seating = visualEditor.selectedSeating;
+        
+        // Değerleri güncelle
+        seating.name = document.getElementById( 'edit-seating-name' ).value;
+        seating.capacity = parseInt( document.getElementById( 'edit-seating-capacity' ).value );
+        seating.width = parseInt( document.getElementById( 'edit-seating-width' ).value );
+        seating.height = parseInt( document.getElementById( 'edit-seating-height' ).value );
+        seating.x = parseInt( document.getElementById( 'edit-seating-x' ).value );
+        seating.y = parseInt( document.getElementById( 'edit-seating-y' ).value );
+        seating.color = document.getElementById( 'edit-seating-color' ).value;
+        seating.icon = document.getElementById( 'edit-seating-icon' ).value;
+
+        // Canvas'ı güncelle
+        visualEditor.draw();
+        updateCapacityInfo();
+        updateSelectedSeatingInfo();
+        
+        closeEditSeatingModal();
+        showNotification( 'Oturum güncellendi', 'success' );
+    } );
+
+    // Renk input senkronizasyonu
+    document.getElementById( 'edit-seating-color' ).addEventListener( 'input', function ( e ) {
+        document.getElementById( 'edit-seating-color-text' ).value = e.target.value;
+    } );
+
+    document.getElementById( 'edit-seating-color-text' ).addEventListener( 'input', function ( e ) {
+        const color = e.target.value;
+        if ( /^#[0-9A-Fa-f]{6}$/.test( color ) ) {
+            document.getElementById( 'edit-seating-color' ).value = color;
+        }
+    } );
+
     // Add keyboard shortcuts
     document.addEventListener( 'keydown', function ( e ) {
+        // Modal açıksa klavye kısayollarını devre dışı bırak
+        const modalOpen = !document.getElementById( 'edit-seating-modal' ).classList.contains( 'hidden' ) ||
+                         !document.getElementById( 'save-template-modal' ).classList.contains( 'hidden' ) ||
+                         !document.getElementById( 'template-modal' ).classList.contains( 'hidden' );
+        
+        if ( modalOpen ) {
+            return;
+        }
+
+        // Ctrl/Cmd kombinasyonları
         if ( e.ctrlKey || e.metaKey ) {
-            switch ( e.key ) {
+            switch ( e.key.toLowerCase() ) {
                 case 'z':
                     if ( !e.shiftKey ) {
                         e.preventDefault();
@@ -1294,19 +1657,125 @@
                     }
                     break;
                 case 'y':
-                case 'Z':
-                    if ( e.shiftKey || e.key === 'y' ) {
-                        e.preventDefault();
-                        redoAction();
-                    }
+                    e.preventDefault();
+                    redoAction();
                     break;
+                case 'd':
+                    e.preventDefault();
+                    duplicateSelected();
+                    break;
+                case 's':
+                    e.preventDefault();
+                    saveLayout();
+                    break;
+            }
+            return;
+        }
+
+        // Seçili oturum varsa
+        if ( visualEditor && visualEditor.selectedSeating ) {
+            const moveSpeed = e.shiftKey ? 50 : 10;
+            let moved = false;
+
+            switch ( e.key ) {
+                case 'Delete':
+                case 'Backspace':
+                    e.preventDefault();
+                    deleteSelectedSeating();
+                    break;
+                case 'Escape':
+                    e.preventDefault();
+                    visualEditor.selectedSeating = null;
+                    visualEditor.draw();
+                    updateSelectedSeatingInfo();
+                    break;
+                case 'ArrowUp':
+                    e.preventDefault();
+                    visualEditor.selectedSeating.y -= moveSpeed;
+                    moved = true;
+                    break;
+                case 'ArrowDown':
+                    e.preventDefault();
+                    visualEditor.selectedSeating.y += moveSpeed;
+                    moved = true;
+                    break;
+                case 'ArrowLeft':
+                    e.preventDefault();
+                    visualEditor.selectedSeating.x -= moveSpeed;
+                    moved = true;
+                    break;
+                case 'ArrowRight':
+                    e.preventDefault();
+                    visualEditor.selectedSeating.x += moveSpeed;
+                    moved = true;
+                    break;
+            }
+
+            if ( moved ) {
+                // Sınırları kontrol et
+                visualEditor.selectedSeating.x = Math.max( 0, Math.min( visualEditor.selectedSeating.x, visualEditor.config.width - visualEditor.selectedSeating.width ) );
+                visualEditor.selectedSeating.y = Math.max( 0, Math.min( visualEditor.selectedSeating.y, visualEditor.config.height - visualEditor.selectedSeating.height ) );
+                
+                visualEditor.draw();
+                updateSelectedSeatingInfo();
             }
         }
     } );
 
+    // Canvas click/touch event - seçim değiştiğinde bilgileri güncelle
+    if ( visualEditor && visualEditor.canvas ) {
+        visualEditor.canvas.addEventListener( 'click', function () {
+            setTimeout( updateSelectedSeatingInfo, 100 );
+        } );
+        
+        // Touch support
+        visualEditor.canvas.addEventListener( 'touchend', function () {
+            setTimeout( updateSelectedSeatingInfo, 100 );
+        } );
+    }
+
+    // Touch gestures için ek destek
+    let touchStartX = 0;
+    let touchStartY = 0;
+    
+    document.addEventListener( 'touchstart', function ( e ) {
+        if ( e.target.closest( '#visual-seating-editor' ) ) {
+            touchStartX = e.touches[0].clientX;
+            touchStartY = e.touches[0].clientY;
+        }
+    }, { passive: true } );
+
+    document.addEventListener( 'touchmove', function ( e ) {
+        if ( e.target.closest( '#visual-seating-editor' ) && visualEditor && visualEditor.selectedSeating ) {
+            const touchX = e.touches[0].clientX;
+            const touchY = e.touches[0].clientY;
+            const deltaX = touchX - touchStartX;
+            const deltaY = touchY - touchStartY;
+
+            if ( Math.abs( deltaX ) > 5 || Math.abs( deltaY ) > 5 ) {
+                visualEditor.selectedSeating.x += deltaX;
+                visualEditor.selectedSeating.y += deltaY;
+                visualEditor.draw();
+                updateSelectedSeatingInfo();
+
+                touchStartX = touchX;
+                touchStartY = touchY;
+            }
+        }
+    }, { passive: true } );
+
     // Initialize undo/redo buttons when editor is ready
     document.addEventListener( 'DOMContentLoaded', function () {
-        setTimeout( updateUndoRedoButtons, 1000 ); // Wait for editor to initialize
+        setTimeout( function() {
+            updateUndoRedoButtons();
+            
+            // Canvas click event listener ekle
+            if ( visualEditor && visualEditor.canvas ) {
+                visualEditor.canvas.addEventListener( 'click', function () {
+                    setTimeout( updateSelectedSeatingInfo, 100 );
+                } );
+            }
+        }, 1000 ); // Wait for editor to initialize
     } );
 </script>
 {% endblock %}
