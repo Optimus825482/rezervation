@@ -1,0 +1,320 @@
+{% extends "base.html" %}
+{% block title %}Rezervasyon Detayı{% endblock %}
+
+{% block content %}
+<div class="mx-auto max-w-6xl space-y-6">
+    <div class="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+        <div class="space-y-1">
+            <p class="text-xs uppercase tracking-[0.3em] text-slate-400 dark:text-slate-600">Rezervasyon</p>
+            <h1 class="text-3xl font-bold text-slate-900 dark:text-white">Rezervasyon Detayı</h1>
+            <p class="text-sm text-slate-600 dark:text-slate-400">Misafir bilgilerini, QR kodunu ve hızlı işlemleri tek
+                ekranda görüntüle.</p>
+        </div>
+        <div class="flex flex-wrap gap-2">
+            <a href="{{ url_for('reservation.index') }}" class="btn-shadcn btn-shadcn-outline btn-shadcn-sm">
+                <i class="fas fa-arrow-left"></i>
+                <span>Listeye Dön</span>
+            </a>
+            <a href="{{ url_for('checkin.index') }}" class="btn-shadcn btn-shadcn-ghost btn-shadcn-sm">
+                <i class="fas fa-qrcode"></i>
+                <span>Check-in Paneli</span>
+            </a>
+        </div>
+    </div>
+
+    <div class="grid gap-6 lg:grid-cols-[2fr,1fr]">
+        <section class="card-shadcn">
+            <div class="card-shadcn-header pb-4">
+                <div class="flex items-center gap-3">
+                    <span
+                        class="inline-flex h-11 w-11 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                        <i class="fas fa-user"></i>
+                    </span>
+                    <div>
+                        <h2 class="card-shadcn-title text-lg">Misafir Bilgileri</h2>
+                        <p class="card-shadcn-description">Rezervasyona ait iletişim ve etkinlik detayları.</p>
+                    </div>
+                </div>
+            </div>
+            <div class="card-shadcn-content">
+                <dl class="space-y-5">
+                    <div class="grid gap-1">
+                        <dt class="text-xs uppercase tracking-[0.25em] text-slate-400">Ad Soyad</dt>
+                        <dd class="text-base font-semibold text-slate-900 dark:text-white">{{
+                            reservation.customer_name|safe_text }}</dd>
+                    </div>
+                    <div class="grid gap-1">
+                        <dt class="text-xs uppercase tracking-[0.25em] text-slate-400">Telefon</dt>
+                        <dd class="text-sm text-slate-600 dark:text-slate-300">{{ reservation.phone|format_phone }}</dd>
+                    </div>
+                    <div class="grid gap-1">
+                        <dt class="text-xs uppercase tracking-[0.25em] text-slate-400">Rezervasyon Kodu</dt>
+                        <dd
+                            class="inline-flex items-center gap-2 rounded-lg bg-slate-100 px-3 py-2 text-sm font-medium text-slate-800 dark:bg-slate-900/60 dark:text-slate-100">
+                            <i class="fas fa-tag text-primary"></i>
+                            <code class="text-sm">{{ reservation.reservation_code|safe_text }}</code>
+                        </dd>
+                    </div>
+                    <div class="grid gap-1">
+                        <dt class="text-xs uppercase tracking-[0.25em] text-slate-400">Etkinlik</dt>
+                        <dd class="text-sm text-slate-600 dark:text-slate-300">{{ reservation.event.name|safe_text }}
+                        </dd>
+                    </div>
+                    {% if reservation.seating %}
+                    <div class="grid gap-1">
+                        <dt class="text-xs uppercase tracking-[0.25em] text-slate-400">Koltuk</dt>
+                        <dd
+                            class="inline-flex items-center gap-2 text-sm font-medium text-slate-700 dark:text-slate-200">
+                            <i class="fas fa-chair text-primary"></i>
+                            <span>{{ reservation.seating.seat_number|safe_text }}</span>
+                        </dd>
+                    </div>
+                    {% endif %}
+                    <div class="grid gap-1">
+                        <dt class="text-xs uppercase tracking-[0.25em] text-slate-400">Durum</dt>
+                        <dd class="space-y-1">
+                            {% if reservation.checked_in %}
+                            <span
+                                class="inline-flex items-center gap-2 rounded-full bg-emerald-500/10 px-4 py-2 text-xs font-semibold uppercase tracking-wide text-emerald-600">
+                                <i class="fas fa-check-circle"></i>
+                                Check-in Tamamlandı
+                            </span>
+                            {% if reservation.checked_in_at %}
+                            <p class="text-xs text-slate-500">{{ reservation.checked_in_at.strftime('%d.%m.%Y %H:%M') }}
+                            </p>
+                            {% endif %}
+                            {% else %}
+                            <span
+                                class="inline-flex items-center gap-2 rounded-full bg-amber-500/10 px-4 py-2 text-xs font-semibold uppercase tracking-wide text-amber-600">
+                                <i class="fas fa-hourglass-half"></i>
+                                Check-in Bekleniyor
+                            </span>
+                            {% endif %}
+                        </dd>
+                    </div>
+                    <div class="grid gap-1">
+                        <dt class="text-xs uppercase tracking-[0.25em] text-slate-400">Oluşturulma</dt>
+                        <dd class="text-sm text-slate-600 dark:text-slate-300">{{
+                            reservation.created_at.strftime('%d.%m.%Y %H:%M') if reservation.created_at }}</dd>
+                    </div>
+                    {% if reservation.notes %}
+                    <div class="grid gap-2">
+                        <dt class="text-xs uppercase tracking-[0.25em] text-slate-400">Notlar</dt>
+                        <dd
+                            class="rounded-xl border border-dashed border-slate-200 bg-slate-50 p-4 text-sm text-slate-600 dark:border-slate-800 dark:bg-slate-900/40 dark:text-slate-300">
+                            {{ reservation.notes|safe_text }}
+                        </dd>
+                    </div>
+                    {% endif %}
+                </dl>
+            </div>
+        </section>
+
+        <div class="space-y-6">
+            <section class="card-shadcn">
+                <div class="card-shadcn-header pb-4">
+                    <div class="flex items-center gap-3">
+                        <span
+                            class="inline-flex h-11 w-11 items-center justify-center rounded-xl bg-slate-900/10 text-slate-900 dark:bg-slate-100/10 dark:text-slate-100">
+                            <i class="fas fa-qrcode"></i>
+                        </span>
+                        <div>
+                            <h2 class="card-shadcn-title text-lg">QR Kod</h2>
+                            <p class="card-shadcn-description">Rezervasyon girişinde hızlı doğrulama için kullan.</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-shadcn-content text-center">
+                    {% if reservation.qr_code_path %}
+                    <div class="mx-auto flex max-w-xs flex-col items-center gap-4">
+                        <img src="{{ url_for('static', filename=reservation.qr_code_path) }}" alt="QR Code"
+                            class="w-full rounded-xl border border-slate-200 bg-white p-3 shadow-sm dark:border-slate-800 dark:bg-slate-900/60"
+                            data-qr-image>
+                        <div class="flex w-full flex-col gap-2">
+                            <a href="{{ url_for('static', filename=reservation.qr_code_path) }}"
+                                download="qr_{{ reservation.reservation_code }}.png"
+                                class="btn-shadcn btn-shadcn-default" data-qr-download>
+                                <i class="fas fa-download"></i>
+                                <span>QR Kodu İndir</span>
+                            </a>
+                            <button type="button" data-print-qr
+                                data-reservation-code="{{ reservation.reservation_code|safe_text|e }}"
+                                data-reservation-name="{{ reservation.customer_name|safe_text|e }}"
+                                data-event-name="{{ reservation.event.name|safe_text|e }}"
+                                class="btn-shadcn btn-shadcn-outline">
+                                <i class="fas fa-print"></i>
+                                <span>QR Kodu Yazdır</span>
+                            </button>
+                        </div>
+                    </div>
+                    {% else %}
+                    <div class="alert-shadcn alert-shadcn-default">
+                        <div class="flex items-start gap-3">
+                            <i class="fas fa-exclamation-triangle text-amber-500"></i>
+                            <div class="text-sm text-slate-600 dark:text-slate-300">
+                                Bu rezervasyon için QR kodu bulunamadı. Aşağıdan hemen oluşturabilirsin.
+                            </div>
+                        </div>
+                    </div>
+                    <button type="button" data-generate-qr data-reservation-id="{{ reservation.id }}"
+                        data-generate-url="{{ url_for('reservation.generate_qr', id=reservation.id) }}"
+                        data-reservation-label="{{ reservation.customer_name|safe_text|e }}"
+                        class="btn-shadcn btn-shadcn-default">
+                        <i class="fas fa-qrcode"></i>
+                        <span>QR Kod Oluştur</span>
+                    </button>
+                    {% endif %}
+                </div>
+            </section>
+
+            {% if not reservation.checked_in %}
+            <section
+                class="card-shadcn border border-dashed border-slate-200 bg-slate-50 dark:border-slate-800 dark:bg-slate-900/40">
+                <div class="card-shadcn-header pb-3">
+                    <div class="flex items-center gap-3">
+                        <span
+                            class="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-500">
+                            <i class="fas fa-clipboard-check"></i>
+                        </span>
+                        <div>
+                            <h2 class="card-shadcn-title text-base">Hızlı İşlemler</h2>
+                            <p class="card-shadcn-description">Manuel doğrulama yaparak giriş sürecini hızlandır.</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-shadcn-content">
+                    <form method="POST" action="{{ url_for('checkin.manual_checkin', id=reservation.id) }}"
+                        class="space-y-3">
+                        <button type="submit" class="btn-shadcn btn-shadcn-default w-full">
+                            <i class="fas fa-check"></i>
+                            <span>Manuel Check-in</span>
+                        </button>
+                        <p class="text-xs text-slate-500 dark:text-slate-400">Bu işlem misafirin check-in durumunu
+                            anında günceller.</p>
+                    </form>
+                </div>
+            </section>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+{{ super() }}
+<script{% if g.csp_nonce %} nonce="{{ g.csp_nonce }}" {% endif %}>
+    document.addEventListener( 'DOMContentLoaded', () => {
+        const printButton = document.querySelector( '[data-print-qr]' );
+        const qrImage = document.querySelector( '[data-qr-image]' );
+        const generateButton = document.querySelector( '[data-generate-qr]' );
+
+        if ( printButton && qrImage ) {
+            printButton.addEventListener( 'click', () => {
+                const qrSrc = qrImage.getAttribute( 'src' );
+                if ( !qrSrc ) {
+                    window.alert( 'Yazdırılacak QR kodu bulunamadı.' );
+                    return;
+                }
+
+                const printWindow = window.open( '', '_blank', 'noopener=yes,width=640,height=860' );
+                if ( !printWindow ) {
+                    window.alert( 'Yazdırma penceresi açılamadı.' );
+                    return;
+                }
+
+                const eventName = printButton.dataset.eventName || '';
+                const reservationName = printButton.dataset.reservationName || '';
+                const reservationCode = printButton.dataset.reservationCode || '';
+
+                printWindow.document.write( `
+    <!DOCTYPE html>
+    <html>
+
+    <head>
+        <meta charset="utf-8" />
+        <title>QR Kod - ${reservationCode}</title>
+        <style>
+            :root {
+                color-scheme: light dark;
+            }
+
+            body {
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                justify-content: center;
+                min-height: 100vh;
+                margin: 0;
+                font-family: Arial, sans-serif;
+                gap: 1.5rem;
+            }
+
+            img {
+                max-width: 320px;
+            }
+
+            .info {
+                text-align: center;
+            }
+
+            h2 {
+                margin: 0 0 0.5rem;
+                font-size: 1.5rem;
+            }
+
+            p {
+                margin: 0.25rem 0;
+            }
+        </style>
+    </head>
+
+    <body>
+        <div class="info">
+            <h2>${eventName}</h2>
+            <p><strong>${reservationName}</strong></p>
+            <p>Rezervasyon Kodu: ${reservationCode}</p>
+        </div>
+        <img src="${qrSrc}" alt="QR Code" />
+    </body>
+
+    </html>`);
+
+                printWindow.document.close();
+                printWindow.focus();
+                printWindow.setTimeout( () => {
+                    printWindow.print();
+                    printWindow.close();
+                }, 400 );
+            } );
+        }
+
+        if ( generateButton ) {
+            generateButton.addEventListener( 'click', () => {
+                const generateUrl = generateButton.dataset.generateUrl;
+                const reservationLabel = generateButton.dataset.reservationLabel || 'bu rezervasyon';
+                if ( !generateUrl ) {
+                    window.alert( 'QR kodu oluşturmak için gerekli adres bulunamadı.' );
+                    return;
+                }
+                if ( !window.confirm( `${reservationLabel} için QR kod oluşturulsun mu?` ) ) {
+                    return;
+                }
+
+                fetch( generateUrl, { method: 'POST' } )
+                    .then( ( response ) => response.json() )
+                    .then( ( data ) => {
+                        if ( data.success ) {
+                            window.location.reload();
+                        } else {
+                            window.alert( `Hata: ${data.error || 'QR kod oluşturulamadı.'}` );
+                        }
+                    } )
+                    .catch( ( error ) => {
+                        window.alert( `Bağlantı hatası: ${error}` );
+                    } );
+            } );
+        }
+    } );
+</script>
+    {% endblock %}

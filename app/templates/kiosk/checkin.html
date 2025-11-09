@@ -1,0 +1,478 @@
+<!DOCTYPE html>
+<html lang="tr">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Check-in - Kiosk</title>
+    <link rel="icon" href="{{ url_for('static', filename='favicon.ico') }}">
+    <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .kiosk-container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            max-width: 800px;
+            width: 100%;
+            padding: 40px;
+            text-align: center;
+        }
+
+        .kiosk-header {
+            margin-bottom: 40px;
+        }
+
+        .kiosk-title {
+            font-size: 3.5rem;
+            font-weight: 700;
+            color: #2d3748;
+            margin-bottom: 15px;
+        }
+
+        .kiosk-subtitle {
+            font-size: 1.8rem;
+            color: #4a5568;
+            margin-bottom: 10px;
+        }
+
+        .kiosk-description {
+            font-size: 1.3rem;
+            color: #718096;
+        }
+
+        .input-section {
+            margin-bottom: 40px;
+        }
+
+        .input-group {
+            margin-bottom: 30px;
+        }
+
+        .input-label {
+            display: block;
+            font-size: 1.8rem;
+            font-weight: 600;
+            color: #2d3748;
+            margin-bottom: 15px;
+        }
+
+        .input-field {
+            width: 100%;
+            font-size: 2.2rem;
+            padding: 20px;
+            border: 3px solid #e2e8f0;
+            border-radius: 15px;
+            text-align: center;
+            transition: border-color 0.3s;
+        }
+
+        .input-field:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .btn {
+            font-size: 2rem;
+            font-weight: 600;
+            padding: 20px 40px;
+            border: none;
+            border-radius: 15px;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin: 0 10px;
+        }
+
+        .btn-primary {
+            background: #667eea;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #5a67d8;
+            transform: translateY(-2px);
+        }
+
+        .btn-secondary {
+            background: #f7fafc;
+            color: #4a5568;
+            border: 3px solid #e2e8f0;
+        }
+
+        .btn-secondary:hover {
+            background: #edf2f7;
+        }
+
+        .result-section {
+            margin-top: 30px;
+            min-height: 100px;
+        }
+
+        .success-message {
+            background: #c6f6d5;
+            border: 3px solid #48bb78;
+            border-radius: 15px;
+            padding: 30px;
+            color: #2d3748;
+            animation: slideIn 0.5s ease;
+        }
+
+        .error-message {
+            background: #fed7d7;
+            border: 3px solid #f56565;
+            border-radius: 15px;
+            padding: 30px;
+            color: #2d3748;
+            animation: slideIn 0.5s ease;
+        }
+
+        .reservation-details {
+            margin-top: 20px;
+        }
+
+        .detail-item {
+            font-size: 1.5rem;
+            margin: 10px 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .detail-label {
+            font-weight: 600;
+        }
+
+        .detail-value {
+            font-weight: 500;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .qr-scanner {
+            margin: 20px 0;
+        }
+
+        .auto-reset {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: 10px 20px;
+            border-radius: 10px;
+            font-size: 1.2rem;
+            display: none;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        @media (max-width: 768px) {
+            .kiosk-container {
+                padding: 20px;
+                margin: 10px;
+            }
+
+            .kiosk-title {
+                font-size: 2.5rem;
+            }
+
+            .kiosk-subtitle {
+                font-size: 1.5rem;
+            }
+
+            .input-field {
+                font-size: 1.8rem;
+                padding: 15px;
+            }
+
+            .btn {
+                font-size: 1.5rem;
+                padding: 15px 30px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="auto-reset" id="autoReset">30 saniye sonra sıfırlanacak</div>
+
+    <div class="kiosk-container">
+        <div class="kiosk-header">
+            <h1 class="kiosk-title">🎫 Check-in</h1>
+            <h2 class="kiosk-subtitle">Rezervasyonunuzu Doğrulayın</h2>
+            <p class="kiosk-description">QR kodunuzu okutun veya rezervasyon kodunuzu girin</p>
+        </div>
+
+        <div class="input-section">
+            <div class="input-group">
+                <label class="input-label" for="reservationCode">Rezervasyon Kodu</label>
+                <input type="text" id="reservationCode" class="input-field" placeholder="Örn: RSV-12345"
+                    autocomplete="off">
+            </div>
+
+            <div class="input-group">
+                <label class="input-label" for="phoneNumber">Telefon Numarası (Alternatif)</label>
+                <input type="tel" id="phoneNumber" class="input-field" placeholder="0555 123 45 67" autocomplete="off">
+            </div>
+
+            <div>
+                <button class="btn btn-primary" onclick="checkIn()">
+                    <i class="fas fa-check"></i> Check-in Yap
+                </button>
+                <button class="btn btn-secondary" onclick="scanQR()">
+                    <i class="fas fa-qrcode"></i> QR Kod Tara
+                </button>
+            </div>
+        </div>
+
+        <div class="result-section" id="resultSection"></div>
+
+        <div class="qr-scanner hidden" id="qrScanner">
+            <div id="qrReader" style="width: 300px; margin: 0 auto;"></div>
+            <button class="btn btn-secondary" onclick="stopQRScan()" style="margin-top: 20px;">
+                <i class="fas fa-times"></i> Taramayı Durdur
+            </button>
+        </div>
+    </div>
+
+    <script>
+        let autoResetTimer;
+        let html5QrcodeScanner = null;
+        let isQRActive = false;
+
+        // Auto-reset functionality
+        function startAutoReset() {
+            clearTimeout( autoResetTimer );
+            document.getElementById( 'autoReset' ).style.display = 'none';
+
+            let timeLeft = 30;
+            const resetDisplay = document.getElementById( 'autoReset' );
+
+            autoResetTimer = setInterval( () => {
+                timeLeft--;
+                resetDisplay.textContent = `${timeLeft} saniye sonra sıfırlanacak`;
+                resetDisplay.style.display = 'block';
+
+                if ( timeLeft <= 0 ) {
+                    resetKiosk();
+                }
+            }, 1000 );
+        }
+
+        function resetKiosk() {
+            clearInterval( autoResetTimer );
+            document.getElementById( 'autoReset' ).style.display = 'none';
+            document.getElementById( 'reservationCode' ).value = '';
+            document.getElementById( 'phoneNumber' ).value = '';
+            document.getElementById( 'resultSection' ).innerHTML = '';
+            document.getElementById( 'qrScanner' ).classList.add( 'hidden' );
+
+            if ( isQRActive ) {
+                stopQRScan();
+            }
+
+            startAutoReset();
+        }
+
+        function checkIn() {
+            const code = document.getElementById( 'reservationCode' ).value.trim();
+            const phone = document.getElementById( 'phoneNumber' ).value.trim();
+
+            if ( !code && !phone ) {
+                showError( 'Lütfen rezervasyon kodu veya telefon numarası girin.' );
+                return;
+            }
+
+            startAutoReset(); // Reset timer on activity
+
+            showInfo( 'Check-in işlemi yapılıyor...' );
+
+            fetch( '/api/kiosk/checkin', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify( {
+                    code: code,
+                    phone: phone
+                } )
+            } )
+                .then( response => response.json() )
+                .then( data => {
+                    if ( data.success ) {
+                        showSuccess( data );
+                    } else {
+                        showError( data.error );
+                    }
+                } )
+                .catch( error => {
+                    console.error( 'Error:', error );
+                    showError( 'Bağlantı hatası. Lütfen tekrar deneyin.' );
+                } );
+        }
+
+        function scanQR() {
+            if ( isQRActive ) return;
+
+            document.getElementById( 'qrScanner' ).classList.remove( 'hidden' );
+            document.getElementById( 'reservationCode' ).focus();
+
+            html5QrcodeScanner = new Html5Qrcode( "qrReader" );
+
+            html5QrcodeScanner.start(
+                { facingMode: "environment" },
+                {
+                    fps: 10,
+                    qrbox: { width: 250, height: 250 }
+                },
+                ( decodedText ) => {
+                    document.getElementById( 'reservationCode' ).value = decodedText;
+                    stopQRScan();
+                    checkIn();
+                },
+                ( errorMessage ) => {
+                    // QR scan error - ignore
+                }
+            ).then( () => {
+                isQRActive = true;
+            } ).catch( ( err ) => {
+                showError( 'Kamera erişimi başarısız. Lütfen tarayıcı ayarlarından kamera iznini verin.' );
+            } );
+
+            startAutoReset();
+        }
+
+        function stopQRScan() {
+            if ( html5QrcodeScanner && isQRActive ) {
+                html5QrcodeScanner.stop().then( () => {
+                    html5QrcodeScanner.clear();
+                    isQRActive = false;
+                } );
+            }
+            document.getElementById( 'qrScanner' ).classList.add( 'hidden' );
+        }
+
+        function showSuccess( data ) {
+            const resultHTML = `
+                <div class="success-message">
+                    <h3 style="font-size: 2.5rem; margin-bottom: 20px; color: #2d3748;">
+                        ✅ Check-in Başarılı!
+                    </h3>
+                    <div class="reservation-details">
+                        <div class="detail-item">
+                            <span class="detail-label">Müşteri:</span>
+                            <span class="detail-value">${data.reservation.name || 'Belirtilmemiş'}</span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">Telefon:</span>
+                            <span class="detail-value">${data.reservation.phone}</span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">Oturum Numarası:</span>
+                            <span class="detail-value" style="font-size: 1.8rem; font-weight: 700; color: #667eea;">
+                                ${data.reservation.seat_number}
+                            </span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">Kişi Sayısı:</span>
+                            <span class="detail-value">${data.reservation.people_count} kişi</span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">Etkinlik:</span>
+                            <span class="detail-value">${data.reservation.event_name}</span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">Check-in Saati:</span>
+                            <span class="detail-value">${data.reservation.checked_in_at}</span>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            document.getElementById( 'resultSection' ).innerHTML = resultHTML;
+        }
+
+        function showError( message ) {
+            const resultHTML = `
+                <div class="error-message">
+                    <h3 style="font-size: 2rem; margin-bottom: 15px; color: #2d3748;">
+                        ❌ Hata
+                    </h3>
+                    <p style="font-size: 1.5rem;">${message}</p>
+                </div>
+            `;
+
+            document.getElementById( 'resultSection' ).innerHTML = resultHTML;
+        }
+
+        function showInfo( message ) {
+            const resultHTML = `
+                <div style="background: #bee3f8; border: 3px solid #4299e1; border-radius: 15px; padding: 30px; color: #2d3748;">
+                    <p style="font-size: 1.8rem;">⏳ ${message}</p>
+                </div>
+            `;
+
+            document.getElementById( 'resultSection' ).innerHTML = resultHTML;
+        }
+
+        // Event listeners
+        document.getElementById( 'reservationCode' ).addEventListener( 'keypress', function ( e ) {
+            if ( e.key === 'Enter' ) {
+                checkIn();
+            }
+            startAutoReset();
+        } );
+
+        document.getElementById( 'phoneNumber' ).addEventListener( 'keypress', function ( e ) {
+            if ( e.key === 'Enter' ) {
+                checkIn();
+            }
+            startAutoReset();
+        } );
+
+        // Initialize auto-reset on page load
+        document.addEventListener( 'DOMContentLoaded', function () {
+            startAutoReset();
+            document.getElementById( 'reservationCode' ).focus();
+        } );
+
+        // Handle page visibility changes
+        document.addEventListener( 'visibilitychange', function () {
+            if ( document.hidden ) {
+                clearInterval( autoResetTimer );
+            } else {
+                startAutoReset();
+            }
+        } );
+    </script>
+</body>
+
+</html>

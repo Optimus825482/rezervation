@@ -1,0 +1,61 @@
+{
+  "name": "Rezervasyon Yönetim Sistemi",
+  "short_name": "Rezervasyon",
+  "description": "Etkinlik ve rezervasyon yönetim platformu",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#0d6efd",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/static/icons/Icon-72.png",
+      "sizes": "72x72",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/static/icons/Icon-96.png",
+      "sizes": "96x96",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/static/icons/Icon-144.png",
+      "sizes": "144x144",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/static/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/static/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["business", "productivity"],
+  "shortcuts": [
+    {
+      "name": "Yeni Rezervasyon",
+      "short_name": "Rezervasyon",
+      "description": "Hızlı rezervasyon oluştur",
+      "url": "/reservation/create",
+      "icons": [{ "src": "/static/icons/shortcut-reservation.png", "sizes": "96x96" }]
+    },
+    {
+      "name": "Check-in",
+      "short_name": "Check-in",
+      "description": "QR kod ile check-in",
+      "url": "/checkin",
+      "icons": [{ "src": "/static/icons/shortcut-checkin.png", "sizes": "96x96" }]
+    }
+  ],
+  "related_applications": [],
+  "prefer_related_applications": false
+}

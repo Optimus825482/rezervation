@@ -1,0 +1,235 @@
+{% extends "base.html" %}
+{% block title %}Kullanıcı Yönetimi{% endblock %}
+{% block content %}
+<div class="space-y-6">
+    <div class="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+        <div class="space-y-1">
+            <p class="text-xs uppercase tracking-[0.3em] text-slate-400 dark:text-slate-600">Ekip organizasyonu</p>
+            <h1 class="text-3xl font-bold text-slate-900 dark:text-white">Kullanıcı Yönetimi</h1>
+            <p class="text-sm text-slate-600 dark:text-slate-400">Yetki ve erişimleri düzenleyerek operasyonu güvenle
+                yönet.</p>
+        </div>
+        <div class="flex flex-wrap gap-2">
+            <button type="button" data-user-dialog-open class="btn-shadcn btn-shadcn-default btn-shadcn-sm">
+                <i class="fas fa-user-plus"></i>
+                <span>Yeni Kullanıcı</span>
+            </button>
+        </div>
+    </div>
+
+    <section class="card-shadcn">
+        <div class="card-shadcn-header">
+            <div class="flex flex-wrap items-center justify-between gap-3">
+                <div>
+                    <h2 class="card-shadcn-title text-lg">Kullanıcı Listesi</h2>
+                    <p class="card-shadcn-description">{{ users|length }} kayıt listelendi</p>
+                </div>
+                <span class="badge-shadcn badge-shadcn-outline text-xs uppercase tracking-[0.2em]">
+                    <i class="fas fa-shield-alt mr-2"></i>
+                    RBAC aktif
+                </span>
+            </div>
+        </div>
+        <div class="card-shadcn-content p-0">
+            {% if users %}
+            <div class="overflow-x-auto">
+                <table class="min-w-full text-left text-sm text-slate-600 dark:text-slate-300">
+                    <thead
+                        class="bg-slate-50 text-xs font-semibold uppercase tracking-[0.2em] text-slate-400 dark:bg-slate-900/40 dark:text-slate-500">
+                        <tr>
+                            <th class="py-3 pl-6 pr-4">Kullanıcı</th>
+                            <th class="py-3 px-4">E-posta</th>
+                            <th class="py-3 px-4">Rol</th>
+                            <th class="py-3 px-4">Durum</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
+                        {% for user in users %}
+                        <tr class="transition hover:bg-slate-50 dark:hover:bg-slate-900/50">
+                            <td class="py-4 pl-6 pr-4">
+                                <div class="flex items-center gap-3">
+                                    <div class="avatar-shadcn bg-primary/10">
+                                        <div class="avatar-shadcn-fallback text-primary font-semibold">
+                                            {{ user.username[0]|upper }}
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <p class="font-semibold text-slate-900 dark:text-white">{{
+                                            user.username|safe_text }}</p>
+                                        {% if user.first_name or user.last_name %}
+                                        <p class="text-xs text-slate-500 dark:text-slate-400">{{ (user.first_name ~ ' '
+                                            ~ user.last_name)|trim }}</p>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="py-4 px-4">
+                                <span class="font-medium text-slate-600 dark:text-slate-300">{{ user.email|safe_text
+                                    }}</span>
+                            </td>
+                            <td class="py-4 px-4">
+                                {% if user.is_admin %}
+                                <span class="badge-shadcn badge-shadcn-destructive">
+                                    <i class="fas fa-crown mr-1"></i>
+                                    Admin
+                                </span>
+                                {% else %}
+                                <span class="badge-shadcn badge-shadcn-secondary">
+                                    <i class="fas fa-user-check mr-1"></i>
+                                    Kontrolör
+                                </span>
+                                {% endif %}
+                            </td>
+                            <td class="py-4 px-4">
+                                {% if user.is_active %}
+                                <span class="badge-shadcn badge-shadcn-default bg-emerald-500 text-white border-0">
+                                    <i class="fas fa-check mr-1"></i>
+                                    Aktif
+                                </span>
+                                {% else %}
+                                <span class="badge-shadcn badge-shadcn-outline text-slate-500">
+                                    <i class="fas fa-times mr-1"></i>
+                                    Pasif
+                                </span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="p-6">
+                <div class="alert-shadcn alert-shadcn-default">
+                    <div class="flex items-start gap-3">
+                        <i class="fas fa-info-circle text-primary"></i>
+                        <div>
+                            <p class="text-sm text-slate-600 dark:text-slate-300">Henüz kullanıcı bulunmuyor.</p>
+                            <p class="text-xs text-slate-500 dark:text-slate-400">Yeni bir ekip arkadaşı eklemek için
+                                sağ üstteki butonu kullan.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </section>
+
+    <section
+        class="card-shadcn border border-dashed border-slate-200 bg-slate-50 dark:border-slate-800 dark:bg-slate-900/40">
+        <div class="card-shadcn-content space-y-3">
+            <div class="flex items-center gap-3">
+                <span class="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                    <i class="fas fa-lock"></i>
+                </span>
+                <div>
+                    <p class="text-sm font-semibold text-slate-800 dark:text-white">Güvenlik İpucu</p>
+                    <p class="text-xs text-slate-500 dark:text-slate-400">Kullanıcı erişimlerini düzenli aralıklarla
+                        gözden geçir.</p>
+                </div>
+            </div>
+            <ul class="space-y-2 text-sm text-slate-600 dark:text-slate-300">
+                <li class="flex gap-2">
+                    <i class="fas fa-circle text-[0.45rem] pt-2 text-primary"></i>
+                    <span>Yeni hesaplara ilk girişlerinde şifre değişimi zorunlu tut.</span>
+                </li>
+                <li class="flex gap-2">
+                    <i class="fas fa-circle text-[0.45rem] pt-2 text-primary"></i>
+                    <span>Aktif olmayan kullanıcıları pasife çekerek risk yüzeyini azalt.</span>
+                </li>
+                <li class="flex gap-2">
+                    <i class="fas fa-circle text-[0.45rem] pt-2 text-primary"></i>
+                    <span>Admin rollerini sadece kritik ihtiyaç durumlarında ver.</span>
+                </li>
+            </ul>
+        </div>
+    </section>
+</div>
+
+<div data-user-dialog class="hidden fixed inset-0 z-50 items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
+    <div class="card-shadcn relative w-full max-w-md">
+        <button type="button" data-user-dialog-close
+            class="btn-shadcn btn-shadcn-ghost btn-shadcn-sm absolute right-4 top-4 text-slate-500 hover:text-slate-700 dark:text-slate-400">
+            <i class="fas fa-times"></i>
+        </button>
+        <div class="card-shadcn-header pb-3">
+            <div class="flex items-center gap-3">
+                <span class="inline-flex h-11 w-11 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                    <i class="fas fa-user-plus"></i>
+                </span>
+                <div>
+                    <h2 class="card-shadcn-title text-lg">Yeni Kullanıcı Ekle</h2>
+                    <p class="card-shadcn-description">Operasyon ekibine hızlıca yeni bir hesap tanımla.</p>
+                </div>
+            </div>
+        </div>
+        <form method="POST" action="{{ url_for('admin.create_user') }}" class="card-shadcn-content space-y-4">
+            <label class="space-y-2">
+                <span class="label-shadcn">Kullanıcı Adı</span>
+                <input type="text" class="input-shadcn" name="username" placeholder="kullanici_adi"
+                    autocomplete="username" required data-auto-focus>
+            </label>
+            <label class="space-y-2">
+                <span class="label-shadcn">E-posta</span>
+                <input type="email" class="input-shadcn" name="email" placeholder="kullanici@email.com"
+                    autocomplete="email" required>
+            </label>
+            <label class="space-y-2">
+                <span class="label-shadcn">Şifre</span>
+                <input type="password" class="input-shadcn" name="password" placeholder="••••••••"
+                    autocomplete="new-password" required>
+                <p class="text-xs text-slate-500 dark:text-slate-400">En az 8 karakter, 1 büyük harf, 1 küçük harf, 1
+                    rakam ve 1 özel karakter içermelidir.</p>
+            </label>
+            <label class="space-y-2">
+                <span class="label-shadcn">Rol</span>
+                <select class="input-shadcn" name="role">
+                    <option value="controller">Kontrolör</option>
+                    <option value="admin">Admin</option>
+                </select>
+            </label>
+            <div class="flex flex-col gap-3 pt-2 sm:flex-row">
+                <button type="button" data-user-dialog-close class="btn-shadcn btn-shadcn-outline flex-1">
+                    <i class="fas fa-arrow-left"></i>
+                    <span>Vazgeç</span>
+                </button>
+                <button type="submit" class="btn-shadcn btn-shadcn-default flex-1">
+                    <i class="fas fa-check"></i>
+                    <span>Kaydet</span>
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener( 'DOMContentLoaded', () => {
+        const dialog = document.querySelector( '[data-user-dialog]' );
+        if ( !dialog ) return;
+        const toggleDialog = ( show ) => {
+            dialog.classList.toggle( 'hidden', !show );
+            dialog.classList.toggle( 'flex', show );
+            if ( show ) {
+                const focusable = dialog.querySelector( '[data-auto-focus]' );
+                requestAnimationFrame( () => focusable && focusable.focus() );
+            }
+        };
+        document.querySelectorAll( '[data-user-dialog-open]' ).forEach( ( button ) => {
+            button.addEventListener( 'click', () => toggleDialog( true ) );
+        } );
+        document.querySelectorAll( '[data-user-dialog-close]' ).forEach( ( button ) => {
+            button.addEventListener( 'click', () => toggleDialog( false ) );
+        } );
+        dialog.addEventListener( 'click', ( event ) => {
+            if ( event.target === dialog ) toggleDialog( false );
+        } );
+        document.addEventListener( 'keydown', ( event ) => {
+            if ( event.key === 'Escape' && !dialog.classList.contains( 'hidden' ) ) {
+                toggleDialog( false );
+            }
+        } );
+    } );
+</script>
+{% endblock %}

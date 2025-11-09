@@ -1,0 +1,79 @@
+{% extends "base.html" %}
+
+{% block title %}Giriş Yap - EventFlow{% endblock %}
+
+{% block content %}
+<div
+    class="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 px-4 py-12">
+    <div class="w-full max-w-md">
+        <!-- Logo ve Başlık -->
+        <div class="text-center mb-8">
+            <img src="/static/uploads/logos/logo.png" alt="EventFlow" class="h-20 mx-auto mb-4 drop-shadow-2xl">
+            <h1 class="text-3xl font-bold text-white mb-2">EventFlow</h1>
+            <p class="text-slate-400">Etkinlik Yönetim Sistemi</p>
+        </div>
+
+        <!-- Login Card -->
+        <div class="card-shadcn bg-slate-800/50 backdrop-blur-sm border-slate-700">
+            <div class="card-shadcn-header">
+                <h3 class="card-shadcn-title text-white text-center">Giriş Yap</h3>
+                <p class="card-shadcn-description text-center">Hesabınıza giriş yapın</p>
+            </div>
+
+            <div class="card-shadcn-content space-y-4">
+                <form method="POST" class="space-y-4">
+                    <!-- Kullanıcı Adı -->
+                    <div class="space-y-2">
+                        <label for="username" class="label-shadcn text-slate-200">
+                            <i class="fas fa-user mr-2 text-primary"></i>
+                            Kullanıcı Adı
+                        </label>
+                        <input type="text"
+                            class="input-shadcn bg-slate-700/50 border-slate-600 text-white placeholder:text-slate-400 focus:border-primary"
+                            id="username" name="username" placeholder="Kullanıcı adınızı girin" autocomplete="username"
+                            required>
+                    </div>
+
+                    <!-- Şifre -->
+                    <div class="space-y-2">
+                        <label for="password" class="label-shadcn text-slate-200">
+                            <i class="fas fa-lock mr-2 text-primary"></i>
+                            Şifre
+                        </label>
+                        <input type="password"
+                            class="input-shadcn bg-slate-700/50 border-slate-600 text-white placeholder:text-slate-400 focus:border-primary"
+                            id="password" name="password" placeholder="••••••••" autocomplete="current-password"
+                            required>
+                    </div>
+
+                    <!-- Giriş Butonu -->
+                    <button type="submit"
+                        class="btn-shadcn btn-shadcn-default w-full bg-primary hover:bg-primary/90 text-white font-semibold h-12 text-base shadow-lg hover:shadow-xl transition-all">
+                        <i class="fas fa-sign-in-alt mr-2"></i>
+                        Giriş Yap
+                    </button>
+                </form>
+
+                <!-- İlk Kurulum Link -->
+                <div class="separator-shadcn separator-shadcn-horizontal bg-slate-700"></div>
+
+                <div class="text-center">
+                    <a href="{{ url_for('auth.setup') }}"
+                        class="inline-flex items-center text-sm text-primary hover:text-primary/80 transition-colors">
+                        <i class="fas fa-cog mr-2"></i>
+                        İlk Kurulum
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="text-center mt-6">
+            <p class="text-slate-500 text-sm">
+                <i class="fas fa-shield-alt mr-1"></i>
+                Güvenli giriş
+            </p>
+        </div>
+    </div>
+</div>
+{% endblock %}

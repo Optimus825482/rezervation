@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="tr">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Çevrimdışı - Rezervasyon Sistemi</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            text-align: center;
+            padding: 2rem;
+        }
+
+        .offline-container {
+            max-width: 500px;
+        }
+
+        .offline-icon {
+            font-size: 5rem;
+            margin-bottom: 2rem;
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+
+            0%,
+            100% {
+                opacity: 1;
+            }
+
+            50% {
+                opacity: 0.5;
+            }
+        }
+
+        h1 {
+            font-size: 2rem;
+            margin-bottom: 1rem;
+        }
+
+        p {
+            font-size: 1.1rem;
+            line-height: 1.6;
+            margin-bottom: 2rem;
+            opacity: 0.9;
+        }
+
+        .retry-btn {
+            background: white;
+            color: #667eea;
+            border: none;
+            padding: 1rem 2rem;
+            font-size: 1rem;
+            font-weight: 600;
+            border-radius: 0.5rem;
+            cursor: pointer;
+            transition: transform 0.2s ease;
+        }
+
+        .retry-btn:hover {
+            transform: scale(1.05);
+        }
+
+        .retry-btn:active {
+            transform: scale(0.95);
+        }
+
+        .features {
+            margin-top: 3rem;
+            text-align: left;
+            background: rgba(255, 255, 255, 0.1);
+            padding: 1.5rem;
+            border-radius: 1rem;
+            backdrop-filter: blur(10px);
+        }
+
+        .features h3 {
+            font-size: 1.2rem;
+            margin-bottom: 1rem;
+        }
+
+        .features ul {
+            list-style: none;
+        }
+
+        .features li {
+            padding: 0.5rem 0;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .features li::before {
+            content: "✓";
+            display: inline-block;
+            width: 1.5rem;
+            height: 1.5rem;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 50%;
+            text-align: center;
+            line-height: 1.5rem;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="offline-container">
+        <div class="offline-icon">📡</div>
+        <h1>İnternet Bağlantısı Yok</h1>
+        <p>
+            Şu anda çevrimdışısınız. Lütfen internet bağlantınızı kontrol edin ve tekrar deneyin.
+        </p>
+        <button class="retry-btn" data-offline-retry>
+            🔄 Tekrar Dene
+        </button>
+
+        <div class="features">
+            <h3>Çevrimdışı Özellikler:</h3>
+            <ul>
+                <li>Daha önce görüntülenen sayfalar kullanılabilir</li>
+                <li>Verileriniz güvendedir</li>
+                <li>Bağlantı kurulduğunda otomatik senkronizasyon</li>
+                <li>Bekleyen işlemler kaydedilir</li>
+            </ul>
+        </div>
+    </div>
+</body>
+
+<script>
+    document.addEventListener( 'DOMContentLoaded', function () {
+        var retryButton = document.querySelector( '[data-offline-retry]' );
+        if ( !retryButton ) {
+            return;
+        }
+        retryButton.addEventListener( 'click', function () {
+            window.location.reload();
+        } );
+    } );
+</script>
+
+</html>

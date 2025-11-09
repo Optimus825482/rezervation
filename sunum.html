@@ -1,0 +1,1004 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Etkinlik Rezervasyon Yönetim Sistemi - Proje Sunumu</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #333;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        /* Header Styles */
+        .header {
+            background: white;
+            padding: 40px;
+            border-radius: 20px;
+            margin-bottom: 30px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+            text-align: center;
+            animation: fadeInDown 0.8s ease;
+        }
+
+        .header h1 {
+            color: #667eea;
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        .header .subtitle {
+            color: #666;
+            font-size: 1.2em;
+        }
+
+        /* Section Styles */
+        .section {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            margin-bottom: 25px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.08);
+            animation: fadeInUp 0.8s ease;
+        }
+
+        .section h2 {
+            color: #764ba2;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 1.8em;
+            border-bottom: 3px solid #667eea;
+            padding-bottom: 10px;
+        }
+
+        .section h3 {
+            color: #667eea;
+            margin: 20px 0 10px 0;
+            font-size: 1.3em;
+        }
+
+        /* Feature Grid */
+        .feature-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 20px;
+            margin: 20px 0;
+        }
+
+        .feature-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 25px;
+            border-radius: 12px;
+            color: white;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            cursor: pointer;
+        }
+
+        .feature-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 30px rgba(102, 126, 234, 0.3);
+        }
+
+        .feature-card .icon {
+            font-size: 3em;
+            margin-bottom: 15px;
+        }
+
+        .feature-card h4 {
+            font-size: 1.3em;
+            margin-bottom: 10px;
+        }
+
+        /* Tech Stack */
+        .tech-stack {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            margin: 20px 0;
+        }
+
+        .tech-badge {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 10px 20px;
+            border-radius: 25px;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: transform 0.2s ease;
+        }
+
+        .tech-badge:hover {
+            transform: scale(1.05);
+        }
+
+        /* Module Cards */
+        .module-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin: 20px 0;
+        }
+
+        .module-card {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+            border-left: 5px solid #667eea;
+            transition: all 0.3s ease;
+        }
+
+        .module-card:hover {
+            background: #667eea;
+            color: white;
+            transform: translateX(5px);
+        }
+
+        .module-card h4 {
+            color: #764ba2;
+            margin-bottom: 10px;
+        }
+
+        .module-card:hover h4 {
+            color: white;
+        }
+
+        .module-card ul {
+            list-style: none;
+            padding-left: 0;
+        }
+
+        .module-card li:before {
+            content: "✓ ";
+            color: #667eea;
+            font-weight: bold;
+            margin-right: 5px;
+        }
+
+        .module-card:hover li:before {
+            color: white;
+        }
+
+        /* Database Schema */
+        .db-table {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 10px 0;
+            border-left: 4px solid #667eea;
+        }
+
+        .db-table h4 {
+            color: #764ba2;
+            margin-bottom: 8px;
+        }
+
+        .db-table code {
+            background: white;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 0.9em;
+            color: #667eea;
+        }
+
+        /* Stats Cards */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin: 20px 0;
+        }
+
+        .stat-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 25px;
+            border-radius: 12px;
+            color: white;
+            text-align: center;
+        }
+
+        .stat-card .number {
+            font-size: 3em;
+            font-weight: bold;
+            display: block;
+        }
+
+        .stat-card .label {
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+
+        /* Timeline */
+        .timeline {
+            position: relative;
+            padding: 20px 0;
+        }
+
+        .timeline-item {
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 10px;
+            margin-bottom: 15px;
+            position: relative;
+            padding-left: 60px;
+        }
+
+        .timeline-item:before {
+            content: "✓";
+            position: absolute;
+            left: 20px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 30px;
+            height: 30px;
+            background: #667eea;
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+        }
+
+        /* Animations */
+        @keyframes fadeInDown {
+            from {
+                opacity: 0;
+                transform: translateY(-30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .header h1 {
+                font-size: 1.8em;
+            }
+            
+            .feature-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .module-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* Footer */
+        .footer {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            text-align: center;
+            margin-top: 30px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.08);
+        }
+
+        .footer p {
+            color: #666;
+            font-size: 1.1em;
+        }
+
+        .footer strong {
+            color: #667eea;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <h1>🎭 ETKİNLİK REZERVASYON YÖNETİM SİSTEMİ</h1>
+            <p class="subtitle">Modern, Güvenli ve Kullanıcı Dostu Web Uygulaması</p>
+            <p style="margin-top: 15px; color: #999;">Python Flask | PostgreSQL | React</p>
+        </div>
+
+        <!-- Genel Bakış -->
+        <div class="section">
+            <h2>📋 PROJE GENEL BAKIŞ</h2>
+            <p style="font-size: 1.1em; margin: 15px 0;">
+                Etkinlik Rezervasyon Yönetim Sistemi, farklı tiplerdeki etkinlikler için oturum/masa rezervasyonu yapılmasını,
+                görsel olarak planlanmasını ve kontrol edilmesini sağlayan <strong>Python Flask</strong> tabanlı web uygulamasıdır.
+            </p>
+            
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <span class="number">10</span>
+                    <span class="label">Veritabanı Tablosu</span>
+                </div>
+                <div class="stat-card">
+                    <span class="number">4</span>
+                    <span class="label">Ana Modül</span>
+                </div>
+                <div class="stat-card">
+                    <span class="number">2</span>
+                    <span class="label">Kullanıcı Rolü</span>
+                </div>
+                <div class="stat-card">
+                    <span class="number">∞</span>
+                    <span class="label">Etkinlik Tipi</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Teknoloji Stack -->
+        <div class="section">
+            <h2>🛠️ TEKNOLOJİ STACK</h2>
+            <h3>Backend</h3>
+            <div class="tech-stack">
+                <div class="tech-badge">🐍 Python 3.11+</div>
+                <div class="tech-badge">🌶️ Flask 3.x</div>
+                <div class="tech-badge">🐘 PostgreSQL 15+</div>
+                <div class="tech-badge">📦 SQLAlchemy</div>
+                <div class="tech-badge">🔐 Flask-Login</div>
+                <div class="tech-badge">🔑 JWT</div>
+            </div>
+
+            <h3>Frontend (Önerilen)</h3>
+            <div class="tech-stack">
+                <div class="tech-badge">⚛️ React 18+</div>
+                <div class="tech-badge">📘 TypeScript</div>
+                <div class="tech-badge">🎨 Material-UI</div>
+                <div class="tech-badge">⚡ Vite</div>
+                <div class="tech-badge">🎯 Zustand</div>
+                <div class="tech-badge">📊 Recharts</div>
+                <div class="tech-badge">🖱️ @dnd-kit</div>
+            </div>
+
+            <h3>Raporlama & Analytics</h3>
+            <div class="tech-stack">
+                <div class="tech-badge">📄 ReportLab</div>
+                <div class="tech-badge">📊 pandas</div>
+                <div class="tech-badge">📈 matplotlib/plotly</div>
+                <div class="tech-badge">📑 openpyxl</div>
+            </div>
+
+            <h3>DevOps</h3>
+            <div class="tech-stack">
+                <div class="tech-badge">🐳 Docker</div>
+                <div class="tech-badge">🔧 Nginx</div>
+                <div class="tech-badge">🦄 Gunicorn</div>
+                <div class="tech-badge">📦 Redis</div>
+            </div>
+        </div>
+
+        <!-- Kullanıcı Rolleri -->
+        <div class="section">
+            <h2>👥 KULLANICI ROLLERİ VE YETKİLER</h2>
+            <div class="module-grid">
+                <div class="module-card">
+                    <h4>🔑 Sistem Yöneticisi (Admin)</h4>
+                    <ul>
+                        <li>Sistem kurulumu ve yapılandırma</li>
+                        <li>Etkinlik oluşturma ve düzenleme</li>
+                        <li>Oturum planlaması (görsel düzenleme)</li>
+                        <li>Rezervasyon işlemleri</li>
+                        <li>Kullanıcı (Kontrolör) yönetimi</li>
+                        <li>Tüm raporlara erişim</li>
+                    </ul>
+                </div>
+
+                <div class="module-card">
+                    <h4>🎯 Kontrolör</h4>
+                    <ul>
+                        <li>Aktif etkinliklerden birini seçme</li>
+                        <li>Rezervasyon bilgilerini görüntüleme</li>
+                        <li>Alan doluluk durumunu görüntüleme</li>
+                        <li>İstatistik ve raporlar</li>
+                        <li>Check-in işlemleri (QR kod veya manuel)</li>
+                        <li>Müşteri bilgilerini görüntüleme</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- Ana Özellikler -->
+        <div class="section">
+            <h2>🎯 ANA ÖZELLİKLER</h2>
+            <div class="feature-grid">
+                <div class="feature-card">
+                    <div class="icon">🏢</div>
+                    <h4>Sistem Kurulumu</h4>
+                    <p>Firma bilgileri ve ilk admin kullanıcı oluşturma</p>
+                </div>
+                <div class="feature-card">
+                    <div class="icon">🎭</div>
+                    <h4>Etkinlik Planlama</h4>
+                    <p>Drag & drop ile görsel oturum düzenleme</p>
+                </div>
+                <div class="feature-card">
+                    <div class="icon">📋</div>
+                    <h4>Şablon Sistemi</h4>
+                    <p>Oturum ve etkinlik şablonları</p>
+                </div>
+                <div class="feature-card">
+                    <div class="icon">📱</div>
+                    <h4>Rezervasyon</h4>
+                    <p>Sadece telefon ile hızlı rezervasyon</p>
+                </div>
+                <div class="feature-card">
+                    <div class="icon">📷</div>
+                    <h4>QR Kod Sistemi</h4>
+                    <p>Otomatik QR kod üretimi ve okuma</p>
+                </div>
+                <div class="feature-card">
+                    <div class="icon">👁️</div>
+                    <h4>Kontrolör Paneli</h4>
+                    <p>Etkinlik seçimi ve check-in yönetimi</p>
+                </div>
+
+                <div class="feature-card">
+                    <div class="icon">🖥️</div>
+                    <h4>Müşteri Check-in</h4>
+                    <p>Kendi kendine kontrol ekranı</p>
+                </div>
+                <div class="feature-card">
+                    <div class="icon">📊</div>
+                    <h4>Gelişmiş Raporlama</h4>
+                    <p>PDF/Excel/CSV + Grafikler</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Sistem Modülleri -->
+        <div class="section">
+            <h2>📦 SİSTEM MODÜLLERİ</h2>
+            
+            <div class="timeline">
+                <div class="timeline-item">
+                    <h3>MODÜL 1: Sistem Kurulumu</h3>
+                    <p>✓ Firma bilgileri kaydı<br>
+                    ✓ İlk admin kullanıcı oluşturma<br>
+                    ✓ Doğrulama kuralları</p>
+                </div>
+                
+                <div class="timeline-item">
+                    <h3>MODÜL 2: Yönetici Paneli</h3>
+                    <p>✓ Etkinlik planlama ve oturum düzenleme<br>
+                    ✓ Şablon sistemi (oturum + etkinlik)<br>
+                    ✓ Gelişmiş raporlama sistemi<br>
+                    ✓ Rezervasyon işlemleri<br>
+                    ✓ Kullanıcı yönetimi</p>
+                </div>
+                
+                <div class="timeline-item">
+                    <h3>MODÜL 3: Kontrolör Paneli</h3>
+                    <p>✓ Giriş ve etkinlik seçimi<br>
+                    ✓ Dashboard ve istatistikler<br>
+                    ✓ Rezervasyon görüntüleme<br>
+                    ✓ Görsel doluluk haritası<br>
+                    ✓ Check-in işlemleri</p>
+                </div>
+                
+                <div class="timeline-item">
+                    <h3>MODÜL 4: Müşteri Check-in Ekranı</h3>
+                    <p>✓ QR kod okutma<br>
+                    ✓ Manuel arama (telefon/ad)<br>
+                    ✓ Oturum bilgisi gösterme<br>
+                    ✓ Kiosk modu desteği</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Veritabanı Yapısı -->
+        <div class="section">
+            <h2>🗄️ VERİTABANI YAPISI</h2>
+            <p style="margin-bottom: 20px;">Sistem <strong>10 ana tablo</strong> ile çalışmaktadır:</p>
+            
+            <div class="db-table">
+                <h4>1. companies - Firmalar</h4>
+                <p>Firma bilgileri, logo, iletişim detayları</p>
+            </div>
+            
+            <div class="db-table">
+                <h4>2. users - Kullanıcılar</h4>
+                <p>Admin ve kontrolör kullanıcı bilgileri</p>
+            </div>
+            
+            <div class="db-table">
+                <h4>3. seating_layout_templates - Oturum Düzeni Şablonları</h4>
+                <p>Kayıtlı oturum düzeni konfigürasyonları</p>
+            </div>
+            
+            <div class="db-table">
+                <h4>4. event_templates - Etkinlik Şablonları</h4>
+                <p>Etkinlik türlerine göre varsayılan ayarlar</p>
+            </div>
+            
+            <div class="db-table">
+                <h4>5. events - Etkinlikler</h4>
+                <p>Oluşturulan tüm etkinlikler ve detayları</p>
+            </div>
+            
+            <div class="db-table">
+                <h4>6. seating_types - Oturum Tipleri</h4>
+                <p>Sabit oturum tipleri (2-12 kişilik masalar, VIP loca vb.)</p>
+            </div>
+            
+            <div class="db-table">
+                <h4>7. event_seatings - Etkinlik Oturumları</h4>
+                <p>Her etkinlik için oluşturulan oturumlar</p>
+            </div>
+            
+            <div class="db-table">
+                <h4>8. reservations - Rezervasyonlar</h4>
+                <p>Müşteri rezervasyonları, QR kodlar, check-in durumları</p>
+            </div>
+
+            <div class="db-table">
+                <h4>9. activity_logs - İşlem Logları</h4>
+                <p>Tüm sistem aktivitelerinin kaydı</p>
+            </div>
+            
+            <div class="db-table">
+                <h4>10. report_schedules - Zamanlanmış Raporlar</h4>
+                <p>Otomatik rapor gönderimi için ayarlar (Gelecek Faz)</p>
+            </div>
+        </div>
+
+        <!-- Raporlama Sistemi -->
+        <div class="section">
+            <h2>📊 GELİŞMİŞ RAPORLAMA SİSTEMİ</h2>
+            
+            <div class="module-grid">
+                <div class="module-card">
+                    <h4>📋 Genel Özet Raporu</h4>
+                    <ul>
+                        <li>Toplam etkinlik sayısı</li>
+                        <li>Toplam rezervasyon sayısı</li>
+                        <li>Check-in oranı</li>
+                        <li>Doluluk trendleri</li>
+                    </ul>
+                </div>
+                
+                <div class="module-card">
+                    <h4>🎯 Etkinlik Detay Raporu</h4>
+                    <ul>
+                        <li>Rezervasyon listesi</li>
+                        <li>Check-in durumu</li>
+                        <li>İptal edilen rezervasyonlar</li>
+                        <li>Zaman çizelgesi</li>
+                    </ul>
+                </div>
+                
+                <div class="module-card">
+                    <h4>📈 Rezervasyon Analiz</h4>
+                    <ul>
+                        <li>Günlük/Haftalık/Aylık trend</li>
+                        <li>En çok rezervasyon yapılan gün/saat</li>
+                        <li>İptal oranları</li>
+                        <li>Ortalama rezervasyon süresi</li>
+                    </ul>
+                </div>
+                
+                <div class="module-card">
+                    <h4>📊 Doluluk Analiz</h4>
+                    <ul>
+                        <li>Etkinlik bazlı doluluk oranları</li>
+                        <li>Oturum tipi popülerliği</li>
+                        <li>Zaman serisinde doluluk</li>
+                        <li>Kapasite kullanım verimliliği</li>
+                    </ul>
+                </div>
+            </div>
+
+            <h3>📊 Grafik Tipleri</h3>
+            <div class="tech-stack">
+                <div class="tech-badge">🥧 Pasta Grafiği</div>
+                <div class="tech-badge">📊 Çubuk Grafiği</div>
+                <div class="tech-badge">📈 Çizgi Grafiği</div>
+                <div class="tech-badge">🌊 Alan Grafiği</div>
+                <div class="tech-badge">🔥 Isı Haritası</div>
+            </div>
+
+            <h3>📤 Export Formatları</h3>
+            <div class="tech-stack">
+                <div class="tech-badge">📄 PDF (Profesyonel rapor şablonu)</div>
+                <div class="tech-badge">📊 Excel (Çoklu sheet, formüllü)</div>
+                <div class="tech-badge">📋 CSV (Ham veri export)</div>
+            </div>
+        </div>
+
+        <!-- Şablon Sistemi -->
+        <div class="section">
+            <h2>📋 ŞABLON SİSTEMİ</h2>
+            <p style="font-size: 1.1em; margin-bottom: 20px;">
+                Etkinlik ve oturum planlamasını hızlandıran güçlü şablon sistemi
+            </p>
+
+            <div class="module-grid">
+                <div class="module-card">
+                    <h4>🪑 Oturum Düzeni Şablonları</h4>
+                    <ul>
+                        <li>Sahne konumu ve grid düzeni</li>
+                        <li>Oturum konfigürasyonu</li>
+                        <li>Renk şeması</li>
+                        <li>Sık kullanılanlar</li>
+                        <li>Export/Import (JSON)</li>
+                    </ul>
+                </div>
+
+                <div class="module-card">
+                    <h4>🎭 Etkinlik Şablonları</h4>
+                    <ul>
+                        <li>Etkinlik tipi tanımlama</li>
+                        <li>Varsayılan süre ve alan tipi</li>
+                        <li>Oturum düzeni referansı</li>
+                        <li>Fiyatlandırma ayarları</li>
+                        <li>Hızlı etkinlik oluşturma</li>
+                    </ul>
+                </div>
+            </div>
+
+            <h3>🎯 Kullanım Senaryoları</h3>
+            <div style="background: #f8f9fa; padding: 20px; border-radius: 10px; margin-top: 15px;">
+                <p><strong>🏰 Düğün Salonu Şablonu:</strong> 20x 10 kişilik masa + sahne üstte</p>
+                <p><strong>🎤 Konferans Şablonu:</strong> 100x tekli koltuk + sahne önde</p>
+                <p><strong>🎸 Konser Şablonu:</strong> VIP loca + sıralar + ayakta alanlar</p>
+                <p><strong>🏢 Toplantı Şablonu:</strong> U düzen masalar + projeksiyon alanı</p>
+            </div>
+        </div>
+
+        <!-- Güvenlik -->
+        <div class="section">
+            <h2>🛡️ GÜVENLİK ÖNLEMLERİ</h2>
+            <div class="module-grid">
+                <div class="module-card">
+                    <h4>🔐 Kimlik Doğrulama</h4>
+                    <ul>
+                        <li>Güçlü şifre politikası</li>
+                        <li>Bcrypt şifre hash'leme</li>
+                        <li>JWT token sistemi</li>
+                        <li>Session yönetimi</li>
+                        <li>CSRF koruması</li>
+                    </ul>
+                </div>
+
+                <div class="module-card">
+                    <h4>🔒 Yetkilendirme</h4>
+                    <ul>
+                        <li>Rol tabanlı erişim kontrolü (RBAC)</li>
+                        <li>Flask decorator koruması</li>
+                        <li>API endpoint güvenliği</li>
+                        <li>XSS koruması</li>
+                    </ul>
+                </div>
+
+                <div class="module-card">
+                    <h4>💾 Veri Güvenliği</h4>
+                    <ul>
+                        <li>SQL Injection koruması</li>
+                        <li>Input validasyonu</li>
+                        <li>Output sanitizasyonu</li>
+                        <li>GDPR uyumluluğu</li>
+                    </ul>
+                </div>
+
+                <div class="module-card">
+                    <h4>⚡ İşlem Güvenliği</h4>
+                    <ul>
+                        <li>Rate limiting</li>
+                        <li>IP bazlı kısıtlama</li>
+                        <li>Detaylı loglama</li>
+                        <li>Hatalı giriş takibi</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- Görsel Oturum Düzeni Örneği -->
+        <div class="section">
+            <h2>🎨 GÖRSEL OTURUM DÜZENİ ÖRNEĞİ</h2>
+            <div style="background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%); padding: 40px; border-radius: 15px; text-align: center;">
+                <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 20px; border-radius: 10px; margin-bottom: 30px; font-size: 1.5em; font-weight: bold;">
+                    🎬 SAHNE ALANI
+                </div>
+
+                <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; max-width: 600px; margin: 0 auto;">
+                    <div style="background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%); color: white; padding: 20px; border-radius: 10px; font-weight: bold; text-align: center;">
+                        <div style="font-size: 1.3em;">M1</div>
+                        <div style="font-size: 0.9em; margin-top: 5px;">5 kişi</div>
+                    </div>
+                    <div style="background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%); color: white; padding: 20px; border-radius: 10px; font-weight: bold; text-align: center;">
+                        <div style="font-size: 1.3em;">M2</div>
+                        <div style="font-size: 0.9em; margin-top: 5px;">5 kişi</div>
+                    </div>
+                    <div style="background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%); color: white; padding: 20px; border-radius: 10px; font-weight: bold; text-align: center;">
+                        <div style="font-size: 1.3em;">M3</div>
+                        <div style="font-size: 0.9em; margin-top: 5px;">5 kişi</div>
+                    </div>
+                    <div style="background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%); color: white; padding: 20px; border-radius: 10px; font-weight: bold; text-align: center;">
+                        <div style="font-size: 1.3em;">M4</div>
+                        <div style="font-size: 0.9em; margin-top: 5px;">5 kişi</div>
+                    </div>
+                    <div style="background: linear-gradient(135deg, #2196F3 0%, #1976D2 100%); color: white; padding: 20px; border-radius: 10px; font-weight: bold; text-align: center;">
+                        <div style="font-size: 1.3em;">M5</div>
+                        <div style="font-size: 0.9em; margin-top: 5px;">12 kişi</div>
+                    </div>
+                    <div style="background: linear-gradient(135deg, #2196F3 0%, #1976D2 100%); color: white; padding: 20px; border-radius: 10px; font-weight: bold; text-align: center;">
+                        <div style="font-size: 1.3em;">M6</div>
+                        <div style="font-size: 0.9em; margin-top: 5px;">12 kişi</div>
+                    </div>
+                    <div style="background: linear-gradient(135deg, #2196F3 0%, #1976D2 100%); color: white; padding: 20px; border-radius: 10px; font-weight: bold; text-align: center;">
+                        <div style="font-size: 1.3em;">M7</div>
+                        <div style="font-size: 0.9em; margin-top: 5px;">12 kişi</div>
+                    </div>
+                    <div style="background: linear-gradient(135deg, #2196F3 0%, #1976D2 100%); color: white; padding: 20px; border-radius: 10px; font-weight: bold; text-align: center;">
+                        <div style="font-size: 1.3em;">M8</div>
+                        <div style="font-size: 0.9em; margin-top: 5px;">12 kişi</div>
+                    </div>
+                    <div style="background: linear-gradient(135deg, #FF9800 0%, #F57C00 100%); color: white; padding: 20px; border-radius: 10px; font-weight: bold; text-align: center;">
+                        <div style="font-size: 1.3em;">VIP1</div>
+                        <div style="font-size: 0.9em; margin-top: 5px;">10 kişi</div>
+                    </div>
+                    <div style="background: linear-gradient(135deg, #FF9800 0%, #F57C00 100%); color: white; padding: 20px; border-radius: 10px; font-weight: bold; text-align: center;">
+                        <div style="font-size: 1.3em;">VIP2</div>
+                        <div style="font-size: 0.9em; margin-top: 5px;">10 kişi</div>
+                    </div>
+                    <div style="background: linear-gradient(135deg, #FF9800 0%, #F57C00 100%); color: white; padding: 20px; border-radius: 10px; font-weight: bold; text-align: center;">
+                        <div style="font-size: 1.3em;">VIP3</div>
+                        <div style="font-size: 0.9em; margin-top: 5px;">10 kişi</div>
+                    </div>
+                    <div style="background: linear-gradient(135deg, #FF9800 0%, #F57C00 100%); color: white; padding: 20px; border-radius: 10px; font-weight: bold; text-align: center;">
+                        <div style="font-size: 1.3em;">VIP4</div>
+                        <div style="font-size: 0.9em; margin-top: 5px;">10 kişi</div>
+                    </div>
+                </div>
+
+                <div style="display: flex; justify-content: center; gap: 30px; margin-top: 30px; flex-wrap: wrap;">
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <div style="width: 30px; height: 30px; background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%); border-radius: 5px;"></div>
+                        <span style="font-weight: bold;">5 Kişilik Masa</span>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <div style="width: 30px; height: 30px; background: linear-gradient(135deg, #2196F3 0%, #1976D2 100%); border-radius: 5px;"></div>
+                        <span style="font-weight: bold;">12 Kişilik Masa</span>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <div style="width: 30px; height: 30px; background: linear-gradient(135deg, #FF9800 0%, #F57C00 100%); border-radius: 5px;"></div>
+                        <span style="font-weight: bold;">VIP Loca</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Sistem Mimarisi -->
+        <div class="section">
+            <h2>🏗️ SİSTEM MİMARİSİ</h2>
+            <div style="background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%); padding: 30px; border-radius: 15px;">
+                <div style="background: white; border: 3px solid #667eea; border-radius: 10px; padding: 20px; margin: 15px 0; text-align: center;">
+                    <h4 style="color: #667eea; margin-bottom: 15px;">📱 SUNUM KATMANI (Frontend)</h4>
+                    <div style="display: flex; justify-content: center; gap: 10px; flex-wrap: wrap;">
+                        <span style="background: #667eea; color: white; padding: 8px 15px; border-radius: 5px; font-weight: bold;">React 18+</span>
+                        <span style="background: #667eea; color: white; padding: 8px 15px; border-radius: 5px; font-weight: bold;">TypeScript</span>
+                        <span style="background: #667eea; color: white; padding: 8px 15px; border-radius: 5px; font-weight: bold;">Material-UI</span>
+                        <span style="background: #667eea; color: white; padding: 8px 15px; border-radius: 5px; font-weight: bold;">Recharts</span>
+                    </div>
+                </div>
+
+                <div style="text-align: center; font-size: 2em; color: #667eea; font-weight: bold;">↓</div>
+
+                <div style="background: white; border: 3px solid #667eea; border-radius: 10px; padding: 20px; margin: 15px 0; text-align: center;">
+                    <h4 style="color: #667eea; margin-bottom: 15px;">⚙️ UYGULAMA KATMANI (Backend)</h4>
+                    <div style="display: flex; justify-content: center; gap: 10px; flex-wrap: wrap;">
+                        <span style="background: #764ba2; color: white; padding: 8px 15px; border-radius: 5px; font-weight: bold;">Flask 3.x</span>
+                        <span style="background: #764ba2; color: white; padding: 8px 15px; border-radius: 5px; font-weight: bold;">Flask-Login</span>
+                        <span style="background: #764ba2; color: white; padding: 8px 15px; border-radius: 5px; font-weight: bold;">JWT</span>
+                        <span style="background: #764ba2; color: white; padding: 8px 15px; border-radius: 5px; font-weight: bold;">QRCode</span>
+                    </div>
+                </div>
+
+                <div style="text-align: center; font-size: 2em; color: #667eea; font-weight: bold;">↓</div>
+
+                <div style="background: white; border: 3px solid #667eea; border-radius: 10px; padding: 20px; margin: 15px 0; text-align: center;">
+                    <h4 style="color: #667eea; margin-bottom: 15px;">💾 VERİ KATMANI</h4>
+                    <div style="display: flex; justify-content: center; gap: 10px; flex-wrap: wrap;">
+                        <span style="background: #4CAF50; color: white; padding: 8px 15px; border-radius: 5px; font-weight: bold;">SQLAlchemy</span>
+                        <span style="background: #4CAF50; color: white; padding: 8px 15px; border-radius: 5px; font-weight: bold;">PostgreSQL 15+</span>
+                        <span style="background: #4CAF50; color: white; padding: 8px 15px; border-radius: 5px; font-weight: bold;">Redis Cache</span>
+                    </div>
+                </div>
+
+                <div style="text-align: center; font-size: 2em; color: #667eea; font-weight: bold;">↓</div>
+
+                <div style="background: white; border: 3px solid #667eea; border-radius: 10px; padding: 20px; margin: 15px 0; text-align: center;">
+                    <h4 style="color: #667eea; margin-bottom: 15px;">🚀 ALTYAPI KATMANI</h4>
+                    <div style="display: flex; justify-content: center; gap: 10px; flex-wrap: wrap;">
+                        <span style="background: #FF5722; color: white; padding: 8px 15px; border-radius: 5px; font-weight: bold;">Docker</span>
+                        <span style="background: #FF5722; color: white; padding: 8px 15px; border-radius: 5px; font-weight: bold;">Nginx</span>
+                        <span style="background: #FF5722; color: white; padding: 8px 15px; border-radius: 5px; font-weight: bold;">Gunicorn</span>
+                        <span style="background: #FF5722; color: white; padding: 8px 15px; border-radius: 5px; font-weight: bold;">Supervisor</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- UX İlkeleri -->
+        <div class="section">
+            <h2>🎨 KULLANICI DENEYİMİ İLKELERİ</h2>
+            <div class="feature-grid">
+                <div class="feature-card">
+                    <div class="icon">🎯</div>
+                    <h4>Basitlik</h4>
+                    <p>Sezgisel navigasyon, minimum tıklama, açık etiketler</p>
+                </div>
+                <div class="feature-card">
+                    <div class="icon">💬</div>
+                    <h4>Geri Bildirim</h4>
+                    <p>Başarı/hata mesajları, yükleniyor göstergeleri</p>
+                </div>
+                <div class="feature-card">
+                    <div class="icon">🎨</div>
+                    <h4>Tutarlılık</h4>
+                    <p>Tek tasarım dili, renk paleti, form düzenleri</p>
+                </div>
+                <div class="feature-card">
+                    <div class="icon">♿</div>
+                    <h4>Erişilebilirlik</h4>
+                    <p>Klavye navigasyonu, screen reader, responsive</p>
+                </div>
+                <div class="feature-card">
+                    <div class="icon">⚡</div>
+                    <h4>Performans</h4>
+                    <p>Hızlı yükleme (<3s), lazy loading, optimizasyon</p>
+                </div>
+                <div class="feature-card">
+                    <div class="icon">📱</div>
+                    <h4>Responsive</h4>
+                    <p>Mobil, tablet, masaüstü uyumlu tasarım</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Proje Yapısı -->
+        <div class="section">
+            <h2>📁 PROJE YAPISI</h2>
+            <div style="background: #f8f9fa; padding: 25px; border-radius: 10px; font-family: 'Courier New', monospace; font-size: 0.9em;">
+                <pre style="margin: 0; color: #333;">
+rezervasyon-sistemi/
+├── app/
+│   ├── __init__.py           # Flask app factory
+│   ├── models/               # SQLAlchemy modeller
+│   │   ├── company.py
+│   │   ├── user.py
+│   │   ├── event.py
+│   │   ├── template.py
+│   │   ├── seating.py
+│   │   └── reservation.py
+│   ├── routes/               # Blueprint'ler
+│   │   ├── auth.py
+│   │   ├── admin.py
+│   │   ├── event.py
+│   │   ├── template.py
+│   │   ├── reservation.py
+│   │   ├── report.py
+│   │   ├── controller.py
+│   │   └── checkin.py
+│   ├── services/             # Business logic
+│   │   ├── auth_service.py
+│   │   ├── event_service.py
+│   │   ├── template_service.py
+│   │   ├── reservation_service.py
+│   │   ├── qr_service.py
+│   │   └── report_service.py
+│   ├── utils/                # Yardımcı fonksiyonlar
+│   ├── templates/            # Jinja2 templates
+│   └── static/               # Static files
+├── migrations/               # Alembic migrations
+├── tests/                    # Test dosyaları
+├── docker/                   # Docker configs
+├── requirements.txt
+└── run.py                    # Entry point
+                </pre>
+            </div>
+        </div>
+
+        <!-- Başarı Faktörleri -->
+        <div class="section">
+            <h2>💪 BAŞARI FAKTÖRLERİ</h2>
+            <div class="feature-grid">
+                <div class="feature-card">
+                    <div class="icon">✅</div>
+                    <h4>Güvenlik Öncelikli</h4>
+                    <p>Çok katmanlı güvenlik, OWASP standartları</p>
+                </div>
+                <div class="feature-card">
+                    <div class="icon">🎯</div>
+                    <h4>UX Odaklı</h4>
+                    <p>Sezgisel arayüz, kullanıcı dostu</p>
+                </div>
+                <div class="feature-card">
+                    <div class="icon">🧪</div>
+                    <h4>Test Driven</h4>
+                    <p>Kapsamlı test coverage, CI/CD</p>
+                </div>
+                <div class="feature-card">
+                    <div class="icon">📚</div>
+                    <h4>Dokümantasyon</h4>
+                    <p>Detaylı kullanıcı ve geliştirici dökümanları</p>
+                </div>
+                <div class="feature-card">
+                    <div class="icon">⚡</div>
+                    <h4>Yüksek Performans</h4>
+                    <p>Optimize sorgular, cache sistemi</p>
+                </div>
+                <div class="feature-card">
+                    <div class="icon">🚀</div>
+                    <h4>Ölçeklenebilir</h4>
+                    <p>Docker, mikroservis mimarisi hazır</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="footer">
+            <div style="margin-bottom: 25px;">
+                <h3 style="color: #667eea; font-size: 1.5em;">📋 PROJE BİLGİLERİ</h3>
+            </div>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; margin-bottom: 30px;">
+                <div style="background: #f8f9fa; padding: 20px; border-radius: 10px;">
+                    <strong style="color: #667eea; display: block; margin-bottom: 5px;">📅 Tarih</strong>
+                    <span>05 Kasım 2025</span>
+                </div>
+                <div style="background: #f8f9fa; padding: 20px; border-radius: 10px;">
+                    <strong style="color: #667eea; display: block; margin-bottom: 5px;">📌 Versiyon</strong>
+                    <span>3.0</span>
+                </div>
+                <div style="background: #f8f9fa; padding: 20px; border-radius: 10px;">
+                    <strong style="color: #667eea; display: block; margin-bottom: 5px;">👨‍💻 Geliştirici</strong>
+                    <span>Erkan</span>
+                </div>
+                <div style="background: #f8f9fa; padding: 20px; border-radius: 10px;">
+                    <strong style="color: #667eea; display: block; margin-bottom: 5px;">⏱️ Geliştirme Süresi</strong>
+                    <span>3-6 Ay (Tahmini)</span>
+                </div>
+            </div>
+            <div style="border-top: 2px solid #eee; padding-top: 20px;">
+                <p style="font-size: 1.1em; margin-bottom: 10px;">
+                    Bu proje, modern web teknolojileri kullanılarak geliştirilmiş,<br>
+                    kullanıcı dostu ve güvenli bir etkinlik yönetim sistemidir.
+                </p>
+                <p style="color: #999; font-size: 0.9em; margin-top: 15px;">
+                    © 2025 - Etkinlik Rezervasyon Yönetim Sistemi v3.0
+                </p>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

@@ -1,0 +1,61 @@
+FROM python:3.11-slim
+
+# Metadata
+LABEL maintainer="Rezervasyon Sistemi"
+LABEL description="Flask Rezervasyon Yönetim Sistemi - Production"
+LABEL version="1.0"
+
+# Çalışma dizini
+WORKDIR /app
+
+# Build argümanları
+ARG DEBIAN_FRONTEND=noninteractive
+
+# Sistem bağımlılıklarını kur
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    gcc \
+    g++ \
+    postgresql-client \
+    libpq-dev \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
+
+# Python bağımlılıklarını kopyala ve kur
+COPY requirements.txt .
+RUN pip install --no-cache-dir --upgrade pip && \
+    pip install --no-cache-dir -r requirements.txt && \
+    pip install --no-cache-dir gunicorn gevent
+
+# Uygulama dosyalarını kopyala
+COPY . .
+
+# Upload klasörlerini oluştur
+RUN mkdir -p /app/app/static/uploads/qr && \
+    mkdir -p /app/app/static/uploads/logos
+
+# Güvenlik: root olmayan kullanıcı oluştur
+RUN useradd -m -u 1000 appuser && \
+    chown -R appuser:appuser /app && \
+    chmod -R 755 /app/app/static
+
+# Kullanıcıya geç
+USER appuser
+
+# Port tanımla
+EXPOSE 5000
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
+    CMD curl -f http://localhost:5000/ || exit 1
+
+# Gunicorn ile production modda başlat
+CMD ["gunicorn", \
+     "--bind", "0.0.0.0:5000", \
+     "--workers", "4", \
+     "--worker-class", "gevent", \
+     "--worker-connections", "1000", \
+     "--timeout", "60", \
+     "--access-logfile", "-", \
+     "--error-logfile", "-", \
+     "--log-level", "info", \
+     "run:app"]

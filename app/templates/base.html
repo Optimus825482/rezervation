@@ -1,0 +1,515 @@
+<!DOCTYPE html>
+<html lang="tr">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
+    <meta name="theme-color" content="#ff6b35">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Rezervasyon">
+    <meta name="description" content="Etkinlik ve rezervasyon yönetim platformu">
+
+    <!-- PWA Manifest -->
+    <link rel="manifest" href="/static/manifest.json">
+
+    <!-- Icons -->
+    <link rel="icon" type="image/png" sizes="32x32" href="/static/icons/all-icons/iOS/Icon-32.png">
+    <link rel="icon" type="image/png" sizes="192x192" href="/static/icons/icon-192.png">
+    <link rel="icon" type="image/png" sizes="512x512" href="/static/icons/icon-512.png">
+    <link rel="apple-touch-icon" sizes="152x152" href="/static/icons/apple-touch-icon.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="/static/icons/apple-touch-icon-180.png">
+
+    <title>{% block title %}EventFlow - Etkinlik Yönetim Sistemi{% endblock %}</title>
+
+    <!-- Preconnect to improve performance -->
+    <link rel="preconnect" href="https://cdn.jsdelivr.net">
+    <link rel="preconnect" href="https://cdnjs.cloudflare.com">
+
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        border: "hsl(var(--border))",
+                        input: "hsl(var(--input))",
+                        ring: "hsl(var(--ring))",
+                        background: "hsl(var(--background))",
+                        foreground: "hsl(var(--foreground))",
+                        primary: {
+                            DEFAULT: "hsl(var(--primary))",
+                            foreground: "hsl(var(--primary-foreground))"
+                        },
+                        secondary: {
+                            DEFAULT: "hsl(var(--secondary))",
+                            foreground: "hsl(var(--secondary-foreground))"
+                        },
+                        destructive: {
+                            DEFAULT: "hsl(var(--destructive))",
+                            foreground: "hsl(var(--destructive-foreground))"
+                        },
+                        muted: {
+                            DEFAULT: "hsl(var(--muted))",
+                            foreground: "hsl(var(--muted-foreground))"
+                        },
+                        accent: {
+                            DEFAULT: "hsl(var(--accent))",
+                            foreground: "hsl(var(--accent-foreground))"
+                        },
+                        popover: {
+                            DEFAULT: "hsl(var(--popover))",
+                            foreground: "hsl(var(--popover-foreground))"
+                        },
+                        card: {
+                            DEFAULT: "hsl(var(--card))",
+                            foreground: "hsl(var(--card-foreground))"
+                        }
+                    },
+                    borderRadius: {
+                        xl: "1rem",
+                        lg: "var(--radius)",
+                        md: "calc(var(--radius) - 2px)",
+                        sm: "calc(var(--radius) - 4px)"
+                    },
+                    fontFamily: {
+                        sans: ["Inter", "-apple-system", "BlinkMacSystemFont", "Segoe UI", "Roboto", "Helvetica Neue", "Arial", "sans-serif"],
+                    },
+                    boxShadow: {
+                        glow: "0 20px 45px -20px rgba(15, 23, 42, 0.45)"
+                    }
+                }
+            }
+        }
+    </script>
+
+    <!-- CSS -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" rel="stylesheet">
+    <link href="/static/css/main.css" rel="stylesheet">
+    <link href="/static/css/shadcn.css" rel="stylesheet">
+
+    <style{% if g.csp_nonce %} nonce="{{ g.csp_nonce }}" {% endif %}>
+        body {
+        margin: 0;
+        font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial,
+        sans-serif;
+        background-color: #f8fafc;
+        }
+
+        .loading-screen {
+        position: fixed;
+        inset: 0;
+        background: linear-gradient(135deg, rgba(15, 23, 42, 0.96), rgba(30, 64, 175, 0.92));
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 9999;
+        transition: opacity 0.3s ease;
+        }
+
+        .loading-screen.hidden {
+        opacity: 0;
+        pointer-events: none;
+        }
+        </style>
+
+        {% block extra_css %}{% endblock %}
+</head>
+
+<body class="min-h-screen bg-slate-50 text-slate-900 antialiased dark:bg-slate-950 dark:text-slate-100">
+    <!-- Yükleme Ekranı -->
+    <div class="loading-screen" id="loading-screen">
+        <div class="flex flex-col items-center gap-4 text-white">
+            <div class="h-12 w-12 animate-spin rounded-full border-4 border-white/30 border-t-white"></div>
+            <span class="text-sm font-medium tracking-wide uppercase text-white/80">Yükleniyor</span>
+        </div>
+    </div>
+
+    <!-- PWA Install Prompt -->
+    <div id="install-pwa-btn" class="pointer-events-auto fixed inset-x-0 bottom-24 z-50 hidden px-4">
+        <div
+            class="mx-auto flex max-w-md items-center gap-4 rounded-2xl bg-white/95 p-4 shadow-glow ring-1 ring-slate-200 backdrop-blur dark:bg-slate-900/95 dark:ring-slate-700">
+            <div class="flex flex-1 flex-col">
+                <p class="text-sm font-semibold text-slate-900 dark:text-slate-100">Uygulamayı yükle</p>
+                <p class="text-xs text-slate-500 dark:text-slate-400">Ana ekrana ekleyerek çevrimdışı deneyimi iyileştir
+                </p>
+            </div>
+            <div class="flex items-center gap-2">
+                <button class="btn-shadcn btn-shadcn-secondary btn-shadcn-sm" id="install-pwa-accept">
+                    <i class="fas fa-download text-xs"></i>
+                    <span>Yükle</span>
+                </button>
+                <button class="btn-shadcn btn-shadcn-ghost btn-shadcn-sm" id="install-pwa-dismiss" aria-label="İptal">
+                    <i class="fas fa-xmark text-base"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    {% set endpoint = request.endpoint or '' %}
+
+    <!-- Üst Navigasyon -->
+    <header
+        class="sticky top-0 z-40 border-b border-slate-200 bg-slate-900/95 text-white backdrop-blur dark:border-slate-800">
+        <div class="mx-auto flex max-w-7xl items-center justify-between px-4 py-3 sm:px-6 lg:px-8">
+            <a href="/"
+                class="flex items-center gap-3 focus:outline-none focus-visible:ring-2 focus-visible:ring-white/70">
+                <img src="/static/uploads/logos/logo.png" alt="EventFlow"
+                    class="h-10 w-auto rounded-lg border border-white/10 bg-white/10 p-1 shadow-lg">
+                <span class="text-lg font-semibold tracking-tight">EventFlow</span>
+            </a>
+
+            <div class="flex items-center gap-3 md:hidden">
+                {% if current_user.is_authenticated %}
+                <button id="mobile-profile-button"
+                    class="inline-flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-white/80 hover:bg-white/20"
+                    aria-label="Profil menüsü">
+                    <i class="fas fa-user"></i>
+                </button>
+                {% endif %}
+                <button id="mobile-menu-button"
+                    class="inline-flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-white/80 hover:bg-white/20"
+                    aria-expanded="false" aria-controls="mobile-menu" aria-label="Menüyü aç">
+                    <i class="fas fa-bars"></i>
+                </button>
+            </div>
+
+            <nav class="hidden items-center gap-2 md:flex">
+                {% if current_user.is_authenticated %}
+                {% if current_user.is_admin %}
+                <a href="{{ url_for('event.index') }}"
+                    class="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/10 px-4 py-2 text-sm font-medium text-white transition hover:bg-white/20 hover:text-white {% if 'event.' in endpoint %}bg-white/25{% endif %}">
+                    <i class="fas fa-calendar-alt"></i>
+                    <span>Etkinlikler</span>
+                </a>
+
+                <div class="relative" data-dropdown>
+                    <button
+                        class="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/10 px-4 py-2 text-sm font-medium text-white transition hover:bg-white/20"
+                        data-dropdown-trigger>
+                        <i class="fas fa-cog"></i>
+                        <span>Tanımlar</span>
+                        <i class="fas fa-chevron-down text-[10px]"></i>
+                    </button>
+                    <div class="dropdown-panel absolute right-0 top-full mt-2 hidden w-56 rounded-xl border border-white/10 bg-slate-800/95 p-2 text-sm shadow-glow backdrop-blur"
+                        data-dropdown-panel>
+                        <a href="{{ url_for('admin.users') }}"
+                            class="flex items-center gap-3 rounded-lg px-3 py-2 text-white/90 transition hover:bg-white/10">
+                            <i class="fas fa-users text-white/70"></i>
+                            <span>Kullanıcı Tanımla</span>
+                        </a>
+                        <a href="{{ url_for('admin.seating_types') }}"
+                            class="mt-1 flex items-center gap-3 rounded-lg px-3 py-2 text-white/90 transition hover:bg-white/10">
+                            <i class="fas fa-chair text-white/70"></i>
+                            <span>Koltuk Türleri</span>
+                        </a>
+                    </div>
+                </div>
+
+                <a href="{{ url_for('template.seating_templates') }}"
+                    class="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/10 px-4 py-2 text-sm font-medium text-white transition hover:bg-white/20 {% if 'template.' in endpoint %}bg-white/25{% endif %}">
+                    <i class="fas fa-layer-group"></i>
+                    <span>Şablonlar</span>
+                </a>
+
+                <a href="{{ url_for('report.index') }}"
+                    class="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/10 px-4 py-2 text-sm font-medium text-white transition hover:bg-white/20 {% if 'report.' in endpoint %}bg-white/25{% endif %}">
+                    <i class="fas fa-chart-bar"></i>
+                    <span>Raporlar</span>
+                </a>
+                {% endif %}
+
+                <a href="{{ url_for('reservation.index') }}"
+                    class="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/10 px-4 py-2 text-sm font-medium text-white transition hover:bg-white/20 {% if 'reservation.' in endpoint %}bg-white/25{% endif %}">
+                    <i class="fas fa-ticket-alt"></i>
+                    <span>Rezervasyonlar</span>
+                </a>
+
+                <a href="{{ url_for('checkin.index') }}"
+                    class="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/10 px-4 py-2 text-sm font-medium text-white transition hover:bg-white/20 {% if 'checkin.' in endpoint %}bg-white/25{% endif %}">
+                    <i class="fas fa-qrcode"></i>
+                    <span>Check-in</span>
+                </a>
+
+                <div class="relative" data-dropdown>
+                    <button
+                        class="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-3 py-2 text-sm font-semibold text-white transition hover:bg-white/20"
+                        data-dropdown-trigger>
+                        <i class="fas fa-user-circle text-lg"></i>
+                        <span>{{ current_user.username }}</span>
+                        <i class="fas fa-chevron-down text-[10px]"></i>
+                    </button>
+                    <div class="dropdown-panel absolute right-0 top-full mt-2 hidden w-64 rounded-xl border border-white/10 bg-slate-800/95 p-3 text-sm shadow-glow backdrop-blur"
+                        data-dropdown-panel>
+                        {% if active_event_name %}
+                        <div
+                            class="mb-2 flex items-center gap-3 rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-white/80">
+                            <i class="fas fa-calendar text-primary-400"></i>
+                            <div class="flex flex-col">
+                                <span class="text-xs text-white/60">Aktif Etkinlik</span>
+                                <span class="font-medium text-white/90">{{ active_event_name }}</span>
+                            </div>
+                        </div>
+                        {% endif %}
+                        <a href="{{ url_for('auth.logout') }}"
+                            class="flex items-center gap-3 rounded-lg px-3 py-2 text-white/90 transition hover:bg-white/10">
+                            <i class="fas fa-sign-out-alt"></i>
+                            <span>Çıkış Yap</span>
+                        </a>
+                    </div>
+                </div>
+                {% else %}
+                <a href="{{ url_for('auth.login') }}"
+                    class="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/10 px-4 py-2 text-sm font-medium text-white transition hover:bg-white/20">
+                    <i class="fas fa-sign-in-alt"></i>
+                    <span>Giriş Yap</span>
+                </a>
+                {% endif %}
+            </nav>
+        </div>
+
+        <!-- Mobil Menü -->
+        <div id="mobile-menu"
+            class="hidden border-t border-white/10 bg-slate-900/95 px-4 py-4 text-sm shadow-inner md:hidden">
+            {% if current_user.is_authenticated %}
+            <nav class="flex flex-col gap-2">
+                {% if current_user.is_admin %}
+                <a href="{{ url_for('event.index') }}"
+                    class="flex items-center gap-3 rounded-xl border border-white/5 bg-white/10 px-4 py-3 text-white/90 transition hover:bg-white/20 {% if 'event.' in endpoint %}!bg-white/25{% endif %}">
+                    <i class="fas fa-calendar-alt text-white/70"></i>
+                    <span>Etkinlik Yönetimi</span>
+                </a>
+                <div class="rounded-xl border border-white/5 bg-white/5 p-3">
+                    <p class="mb-2 text-xs uppercase tracking-wide text-white/40">Tanımlar</p>
+                    <div class="flex flex-col gap-2">
+                        <a href="{{ url_for('admin.users') }}"
+                            class="flex items-center gap-3 rounded-lg bg-white/10 px-3 py-2 text-white/80 transition hover:bg-white/20">
+                            <i class="fas fa-users text-white/60"></i>
+                            <span>Kullanıcı Tanımla</span>
+                        </a>
+                        <a href="{{ url_for('admin.seating_types') }}"
+                            class="flex items-center gap-3 rounded-lg bg-white/10 px-3 py-2 text-white/80 transition hover:bg-white/20">
+                            <i class="fas fa-chair text-white/60"></i>
+                            <span>Koltuk Türleri</span>
+                        </a>
+                    </div>
+                </div>
+                <a href="{{ url_for('template.seating_templates') }}"
+                    class="flex items-center gap-3 rounded-xl border border-white/5 bg-white/10 px-4 py-3 text-white/90 transition hover:bg-white/20 {% if 'template.' in endpoint %}!bg-white/25{% endif %}">
+                    <i class="fas fa-layer-group text-white/70"></i>
+                    <span>Şablon Yönetimi</span>
+                </a>
+                {% endif %}
+
+                <a href="{{ url_for('reservation.index') }}"
+                    class="flex items-center gap-3 rounded-xl border border-white/5 bg-white/10 px-4 py-3 text-white/90 transition hover:bg-white/20 {% if 'reservation.' in endpoint %}!bg-white/25{% endif %}">
+                    <i class="fas fa-ticket-alt text-white/70"></i>
+                    <span>Rezervasyonlar</span>
+                </a>
+
+                <a href="{{ url_for('checkin.index') }}"
+                    class="flex items-center gap-3 rounded-xl border border-white/5 bg-white/10 px-4 py-3 text-white/90 transition hover:bg-white/20 {% if 'checkin.' in endpoint %}!bg-white/25{% endif %}">
+                    <i class="fas fa-qrcode text-white/70"></i>
+                    <span>Check-in Merkezi</span>
+                </a>
+
+                <a href="{{ url_for('auth.logout') }}"
+                    class="mt-2 flex items-center justify-center gap-2 rounded-xl border border-rose-400/20 bg-rose-500/15 px-4 py-3 font-semibold text-rose-100 transition hover:bg-rose-500/25">
+                    <i class="fas fa-sign-out-alt"></i>
+                    <span>Çıkış Yap</span>
+                </a>
+            </nav>
+            {% else %}
+            <div class="flex flex-col gap-3">
+                <a href="{{ url_for('auth.login') }}"
+                    class="flex items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/10 px-4 py-3 font-semibold text-white transition hover:bg-white/20">
+                    <i class="fas fa-sign-in"></i>
+                    <span>Giriş Yap</span>
+                </a>
+            </div>
+            {% endif %}
+        </div>
+    </header>
+
+    <!-- Ana İçerik -->
+    <main class="mx-auto w-full max-w-7xl px-4 pb-24 pt-6 sm:px-6 lg:px-8">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+        {% set flash_styles = {
+        'success': {'classes': 'border-emerald-200 bg-emerald-50 text-emerald-900 shadow-lg dark:border-emerald-900
+        dark:bg-emerald-900/40 dark:text-emerald-100', 'icon': 'fa-circle-check'},
+        'info': {'classes': 'border-sky-200 bg-sky-50 text-sky-900 shadow-lg dark:border-sky-900 dark:bg-sky-900/40
+        dark:text-sky-100', 'icon': 'fa-circle-info'},
+        'warning': {'classes': 'border-amber-200 bg-amber-50 text-amber-900 shadow-lg dark:border-amber-900
+        dark:bg-amber-900/40 dark:text-amber-100', 'icon': 'fa-triangle-exclamation'},
+        'error': {'classes': 'border-rose-200 bg-rose-50 text-rose-900 shadow-lg dark:border-rose-900
+        dark:bg-rose-900/40 dark:text-rose-100', 'icon': 'fa-circle-xmark'}
+        } %}
+        <div class="mb-6 space-y-3">
+            {% for category, message in messages %}
+            {% set key = 'error' if category in ['danger', 'error'] else (category if category in flash_styles else
+            'info') %}
+            {% set style = flash_styles[key] %}
+            <div class="flex items-start gap-3 rounded-2xl border px-4 py-3 shadow-md transition {{ style.classes }}"
+                role="alert">
+                <i class="mt-0.5 text-lg {{ style.icon }}"></i>
+                <div class="flex-1 text-sm font-medium leading-relaxed">{{ message }}</div>
+                <button
+                    class="ml-2 inline-flex h-8 w-8 items-center justify-center rounded-full bg-white/40 text-sm text-current transition hover:bg-white/60 dark:bg-white/10 dark:hover:bg-white/20"
+                    data-flash-dismiss aria-label="Kapat">
+                    <i class="fas fa-xmark"></i>
+                </button>
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+        {% endwith %}
+
+        {% block content %}{% endblock %}
+    </main>
+
+    {% if current_user.is_authenticated %}
+    <nav
+        class="fixed bottom-0 left-0 right-0 z-40 border-t border-slate-200 bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/75 dark:border-slate-800 dark:bg-slate-950/95 md:hidden">
+        <div class="mx-auto flex max-w-xl items-stretch justify-around gap-2 px-2 py-2">
+            <a href="/"
+                class="flex flex-1 flex-col items-center justify-center gap-1 rounded-xl px-2 py-2 text-[13px] font-medium text-slate-500 transition hover:bg-slate-100 hover:text-primary-600 dark:text-slate-400 dark:hover:bg-slate-900/60 {% if endpoint == 'admin.dashboard' or endpoint == 'controller.index' or request.path == '/' %}bg-slate-200/70 text-primary-600 dark:bg-slate-900/60 dark:text-primary-400{% endif %}">
+                <i class="fas fa-home text-base"></i>
+                <span>Ana Sayfa</span>
+            </a>
+            {% if current_user.is_admin %}
+            <a href="{{ url_for('event.index') }}"
+                class="flex flex-1 flex-col items-center justify-center gap-1 rounded-xl px-2 py-2 text-[13px] font-medium text-slate-500 transition hover:bg-slate-100 hover:text-primary-600 dark:text-slate-400 dark:hover:bg-slate-900/60 {% if 'event.' in endpoint %}bg-slate-200/70 text-primary-600 dark:bg-slate-900/60 dark:text-primary-400{% endif %}">
+                <i class="fas fa-calendar-alt text-base"></i>
+                <span>Etkinlik</span>
+            </a>
+            {% endif %}
+            <a href="{{ url_for('reservation.index') }}"
+                class="flex flex-1 flex-col items-center justify-center gap-1 rounded-xl px-2 py-2 text-[13px] font-medium text-slate-500 transition hover:bg-slate-100 hover:text-primary-600 dark:text-slate-400 dark:hover:bg-slate-900/60 {% if 'reservation.' in endpoint %}bg-slate-200/70 text-primary-600 dark:bg-slate-900/60 dark:text-primary-400{% endif %}">
+                <i class="fas fa-ticket-alt text-base"></i>
+                <span>Rezervasyon</span>
+            </a>
+            <a href="{{ url_for('checkin.index') }}"
+                class="flex flex-1 flex-col items-center justify-center gap-1 rounded-xl px-2 py-2 text-[13px] font-medium text-slate-500 transition hover:bg-slate-100 hover:text-primary-600 dark:text-slate-400 dark:hover:bg-slate-900/60 {% if 'checkin.' in endpoint %}bg-slate-200/70 text-primary-600 dark:bg-slate-900/60 dark:text-primary-400{% endif %}">
+                <i class="fas fa-qrcode text-base"></i>
+                <span>Check-in</span>
+            </a>
+            {% if current_user.is_admin %}
+            <a href="{{ url_for('admin.dashboard') }}"
+                class="flex flex-1 flex-col items-center justify-center gap-1 rounded-xl px-2 py-2 text-[13px] font-medium text-slate-500 transition hover:bg-slate-100 hover:text-primary-600 dark:text-slate-400 dark:hover:bg-slate-900/60 {% if 'admin.' in endpoint %}bg-slate-200/70 text-primary-600 dark:bg-slate-900/60 dark:text-primary-400{% endif %}">
+                <i class="fas fa-gauge-high text-base"></i>
+                <span>Panel</span>
+            </a>
+            {% endif %}
+        </div>
+    </nav>
+    {% endif %}
+
+    <!-- Offline Banner -->
+    <div id="offline-indicator" class="pointer-events-none fixed inset-x-0 top-0 z-50 hidden px-4">
+        <div
+            class="mx-auto mt-4 flex max-w-md items-center gap-3 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-medium text-amber-900 shadow-lg dark:border-amber-900 dark:bg-amber-900/50 dark:text-amber-100">
+            <i class="fas fa-wifi-slash"></i>
+            <span>Bağlantı koptu. Çevrimdışı devam ediyorsun.</span>
+        </div>
+    </div>
+
+    <!-- Scriptler -->
+    <script src="/static/js/main.js" defer></script>
+    <script src="/static/js/shadcn-utils.js" defer></script>
+
+    <script{% if g.csp_nonce %} nonce="{{ g.csp_nonce }}" {% endif %}>
+        const html = document.documentElement;
+        if ( window.matchMedia( '(prefers-color-scheme: dark)' ).matches ) {
+            html.classList.add( 'dark' );
+        }
+
+        window.addEventListener( 'load', () => {
+            const loading = document.getElementById( 'loading-screen' );
+            if ( loading ) {
+                loading.classList.add( 'hidden' );
+                setTimeout( () => loading.remove(), 400 );
+            }
+        } );
+
+        const mobileMenuButton = document.getElementById( 'mobile-menu-button' );
+        const mobileMenu = document.getElementById( 'mobile-menu' );
+        const mobileProfileButton = document.getElementById( 'mobile-profile-button' );
+
+        if ( mobileMenuButton && mobileMenu ) {
+            mobileMenuButton.addEventListener( 'click', () => {
+                const expanded = mobileMenuButton.getAttribute( 'aria-expanded' ) === 'true';
+                mobileMenuButton.setAttribute( 'aria-expanded', ( !expanded ).toString() );
+                mobileMenu.classList.toggle( 'hidden' );
+                mobileMenu.classList.toggle( 'animate-shadcn-slide-in' );
+                mobileMenuButton.innerHTML = expanded ? '<i class="fas fa-bars"></i>' : '<i class="fas fa-xmark"></i>';
+            } );
+        }
+
+        if ( mobileProfileButton && mobileMenu ) {
+            mobileProfileButton.addEventListener( 'click', () => {
+                mobileMenu.classList.toggle( 'hidden' );
+            } );
+        }
+
+        document.querySelectorAll( '[data-dropdown]' ).forEach( ( wrapper ) => {
+            const trigger = wrapper.querySelector( '[data-dropdown-trigger]' );
+            const panel = wrapper.querySelector( '[data-dropdown-panel]' );
+            if ( !trigger || !panel ) return;
+
+            const closePanel = ( event ) => {
+                if ( !wrapper.contains( event.target ) ) {
+                    panel.classList.add( 'hidden' );
+                    trigger.setAttribute( 'aria-expanded', 'false' );
+                    document.removeEventListener( 'click', closePanel );
+                }
+            };
+
+            trigger.addEventListener( 'click', ( event ) => {
+                event.preventDefault();
+                const isHidden = panel.classList.contains( 'hidden' );
+                document.querySelectorAll( '[data-dropdown-panel]' ).forEach( ( other ) => {
+                    if ( other !== panel ) {
+                        other.classList.add( 'hidden' );
+                    }
+                } );
+                panel.classList.toggle( 'hidden' );
+                trigger.setAttribute( 'aria-expanded', isHidden.toString() );
+                if ( isHidden ) {
+                    document.addEventListener( 'click', closePanel );
+                }
+            } );
+        } );
+
+        document.querySelectorAll( '[data-flash-dismiss]' ).forEach( ( button ) => {
+            button.addEventListener( 'click', () => {
+                const container = button.closest( '[role="alert"]' );
+                if ( container ) {
+                    container.classList.add( 'animate-shadcn-fade-out' );
+                    setTimeout( () => container.remove(), 200 );
+                }
+            } );
+        } );
+
+        window.addEventListener( 'offline', () => {
+            const banner = document.getElementById( 'offline-indicator' );
+            if ( banner ) {
+                banner.classList.remove( 'hidden' );
+            }
+        } );
+
+        window.addEventListener( 'online', () => {
+            const banner = document.getElementById( 'offline-indicator' );
+            if ( banner ) {
+                banner.classList.add( 'hidden' );
+            }
+        } );
+    </script>
+
+        {% block extra_js %}{% endblock %}
+</body>
+
+</html>

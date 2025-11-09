@@ -1,0 +1,373 @@
+{% extends "base.html" %}
+{% block title %}Check-in{% endblock %}
+
+{% block extra_css %}
+<style{% if g.csp_nonce %} nonce="{{ g.csp_nonce }}" {% endif %}>
+    #qr-reader {
+    width: 100%;
+    max-width: 28rem;
+    margin: 0 auto;
+    border-radius: 1rem;
+    overflow: hidden;
+    }
+
+    #qr-reader__scan_region {
+    border: 2px solid hsl(var(--primary));
+    border-radius: 0.75rem;
+    }
+
+    #qr-reader__dashboard_section_csr button {
+    background: hsl(var(--primary));
+    color: hsl(var(--primary-foreground));
+    border: none;
+    border-radius: 0.75rem;
+    padding: 0.5rem 1rem;
+    font-weight: 600;
+    }
+
+    .scanning-indicator {
+    font-weight: 600;
+    color: hsl(var(--primary));
+    }
+
+    .scanner-toast {
+    animation: fadeIn 0.3s ease;
+    }
+
+    @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(-6px); }
+    to { opacity: 1; transform: translateY(0); }
+    }
+    </style>
+    {% endblock %}
+
+    {% block content %}
+    <div class="space-y-6">
+        <div class="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+            <div class="space-y-1">
+                <p class="text-xs uppercase tracking-[0.3em] text-slate-400 dark:text-slate-600">Check-in Sistemi</p>
+                <h1 class="text-3xl font-bold text-slate-900 dark:text-white">Hızlı QR Kontrolü</h1>
+                <p class="text-sm text-slate-600 dark:text-slate-400">Rezervasyon kodlarını tarayarak ya da manuel giriş
+                    ile check-in işlemlerini tamamla.</p>
+            </div>
+            <div class="flex flex-wrap gap-2">
+                <a href="{{ url_for('reservation.index') }}" class="btn-shadcn btn-shadcn-outline btn-shadcn-sm">
+                    <i class="fas fa-ticket-alt"></i>
+                    <span>Rezervasyonları Gör</span>
+                </a>
+                <a href="{{ url_for('event.index') }}" class="btn-shadcn btn-shadcn-ghost btn-shadcn-sm">
+                    <i class="fas fa-calendar"></i>
+                    <span>Etkinlikler</span>
+                </a>
+            </div>
+        </div>
+
+        <div class="card-shadcn">
+            <div class="card-shadcn-header pb-4">
+                <div class="flex items-center gap-3">
+                    <span
+                        class="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-500">
+                        <i class="fas fa-qrcode"></i>
+                    </span>
+                    <div>
+                        <h2 class="text-lg font-semibold text-slate-900 dark:text-white">Check-in Paneli</h2>
+                        <p class="text-sm text-slate-500 dark:text-slate-400">Kamera taraması ya da manuel kod girişi
+                            arasında geçiş yap.</p>
+                    </div>
+                </div>
+            </div>
+            <div class="card-shadcn-content space-y-6">
+                <div class="flex flex-wrap gap-2">
+                    <button id="scanTab" type="button" class="btn-shadcn btn-shadcn-default">
+                        <i class="fas fa-camera"></i>
+                        <span>Kamera ile Tara</span>
+                    </button>
+                    <button id="manualTab" type="button" class="btn-shadcn btn-shadcn-outline">
+                        <i class="fas fa-keyboard"></i>
+                        <span>Manuel Giriş</span>
+                    </button>
+                </div>
+
+                <div class="grid gap-6 lg:grid-cols-2">
+                    <div id="scannerContainer" class="space-y-4">
+                        <div class="space-y-2">
+                            <h3 class="text-base font-semibold text-slate-900 dark:text-white">QR Kod Tarama</h3>
+                            <p class="text-sm text-slate-500 dark:text-slate-400">Rezervasyon QR kodunu kameranın önüne
+                                getir, sistem otomatik tanır.</p>
+                        </div>
+                        <div
+                            class="rounded-2xl border border-dashed border-slate-200 bg-slate-100/60 p-4 dark:border-slate-800 dark:bg-slate-900/40">
+                            <div id="qr-reader"></div>
+                        </div>
+                        <div id="scanningIndicator" class="scanning-indicator hidden text-sm">
+                            <i class="fas fa-spinner fa-spin"></i>
+                            <span>Taranıyor...</span>
+                        </div>
+                        <div class="flex flex-wrap gap-3">
+                            <button id="startScanBtn" type="button" class="btn-shadcn btn-shadcn-default">
+                                <i class="fas fa-play"></i>
+                                <span>Taramayı Başlat</span>
+                            </button>
+                            <button id="stopScanBtn" type="button" class="btn-shadcn btn-shadcn-destructive hidden">
+                                <i class="fas fa-stop"></i>
+                                <span>Taramayı Durdur</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div id="manualContainer" class="space-y-4 hidden">
+                        <div class="space-y-2">
+                            <h3 class="text-base font-semibold text-slate-900 dark:text-white">Manuel Kod Girişi</h3>
+                            <p class="text-sm text-slate-500 dark:text-slate-400">Rezervasyon kodunu girerek hızlıca
+                                check-in yapabilirsin.</p>
+                        </div>
+                        <label class="space-y-2">
+                            <span
+                                class="label-shadcn text-sm font-semibold text-slate-700 dark:text-slate-200">Rezervasyon
+                                Kodu</span>
+                            <input id="reservationCode" type="text" class="input-shadcn" placeholder="Örn. RSV-12345">
+                        </label>
+                        <button id="manualSubmit" type="button" class="btn-shadcn btn-shadcn-default">
+                            <i class="fas fa-check"></i>
+                            <span>Check-in Yap</span>
+                        </button>
+
+                        <div
+                            class="rounded-xl border border-dashed border-slate-200 bg-slate-50 p-4 text-sm text-slate-600 dark:border-slate-800 dark:bg-slate-900/50 dark:text-slate-300">
+                            <strong class="font-medium text-slate-800 dark:text-slate-100">İpucu</strong>
+                            <p class="mt-1 leading-relaxed">QR kamera erişimi sorun çıkarırsa burada kodu girerek işlemi
+                                tamamlayabilirsin.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="result" class="space-y-2"></div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js" {% if g.csp_nonce %}
+        nonce="{{ g.csp_nonce }}" {% endif %}></script>
+
+    <script{% if g.csp_nonce %} nonce="{{ g.csp_nonce }}" {% endif %}>
+        let html5QrcodeScanner = null;
+        let isScanning = false;
+
+        const scanTab = document.getElementById( 'scanTab' );
+        const manualTab = document.getElementById( 'manualTab' );
+        const scannerContainer = document.getElementById( 'scannerContainer' );
+        const manualContainer = document.getElementById( 'manualContainer' );
+        const startScanBtn = document.getElementById( 'startScanBtn' );
+        const stopScanBtn = document.getElementById( 'stopScanBtn' );
+        const manualSubmit = document.getElementById( 'manualSubmit' );
+        const resultContainer = document.getElementById( 'result' );
+        const scanningIndicator = document.getElementById( 'scanningIndicator' );
+
+        scanTab.addEventListener( 'click', switchToScanner );
+        manualTab.addEventListener( 'click', switchToManual );
+        startScanBtn.addEventListener( 'click', startScanner );
+        stopScanBtn.addEventListener( 'click', stopScanner );
+        manualSubmit.addEventListener( 'click', checkIn );
+
+        function switchToScanner() {
+            scannerContainer.classList.remove( 'hidden' );
+            manualContainer.classList.add( 'hidden' );
+            scanTab.classList.remove( 'btn-shadcn-outline' );
+            scanTab.classList.add( 'btn-shadcn-default' );
+            manualTab.classList.remove( 'btn-shadcn-default' );
+            manualTab.classList.add( 'btn-shadcn-outline' );
+            clearResult();
+        }
+
+        function switchToManual() {
+            if ( isScanning ) {
+                stopScanner();
+            }
+            scannerContainer.classList.add( 'hidden' );
+            manualContainer.classList.remove( 'hidden' );
+            manualTab.classList.remove( 'btn-shadcn-outline' );
+            manualTab.classList.add( 'btn-shadcn-default' );
+            scanTab.classList.remove( 'btn-shadcn-default' );
+            scanTab.classList.add( 'btn-shadcn-outline' );
+            document.getElementById( 'reservationCode' ).focus();
+        }
+
+        async function startScanner() {
+            if ( isScanning ) {
+                return;
+            }
+
+            if ( !navigator.mediaDevices || !navigator.mediaDevices.getUserMedia ) {
+                showError( 'Kamera desteği bu tarayıcıda mevcut değil.' );
+                return;
+            }
+
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia( { video: true } );
+                stream.getTracks().forEach( track => track.stop() );
+
+                html5QrcodeScanner = new Html5Qrcode( 'qr-reader' );
+                const config = { fps: 10, qrbox: { width: 250, height: 250 }, aspectRatio: 1.0 };
+
+                await html5QrcodeScanner.start( { facingMode: 'environment' }, config, onScanSuccess, onScanError );
+                isScanning = true;
+                startScanBtn.classList.add( 'hidden' );
+                stopScanBtn.classList.remove( 'hidden' );
+                scanningIndicator.classList.remove( 'hidden' );
+                scanningIndicator.innerHTML = '<i class="fas fa-spinner fa-spin"></i> <span>Taranıyor...</span>';
+            } catch ( err ) {
+                handleCameraError( err );
+            }
+        }
+
+        function stopScanner() {
+            if ( html5QrcodeScanner && isScanning ) {
+                html5QrcodeScanner.stop().then( () => {
+                    isScanning = false;
+                    startScanBtn.classList.remove( 'hidden' );
+                    stopScanBtn.classList.add( 'hidden' );
+                    scanningIndicator.classList.add( 'hidden' );
+                    html5QrcodeScanner.clear();
+                } ).catch( err => console.error( 'Error stopping scanner:', err ) );
+            }
+        }
+
+        function onScanSuccess( decodedText ) {
+            stopScanner();
+            scanningIndicator.classList.remove( 'hidden' );
+            scanningIndicator.innerHTML = '<i class="fas fa-check-circle text-emerald-500"></i> <span>QR Kod
+            Okundu!</span > ';
+            processCheckIn( decodedText );
+            setTimeout( () => {
+                scanningIndicator.classList.add( 'hidden' );
+            }, 1800 );
+        }
+
+        function onScanError() {
+            // scanning noise ignored intentionally
+        }
+
+        function handleCameraError( err ) {
+            console.error( 'Camera error:', err );
+
+            let errorMessage = 'Kamera erişimi başarısız.';
+            if ( err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError' ) {
+                errorMessage = 'Kamera izni reddedildi. Tarayıcı ayarlarından izin vererek tekrar dene.';
+            } else if ( err.name === 'NotFoundError' || err.name === 'DevicesNotFoundError' ) {
+                errorMessage = 'Kamera bulunamadı. Farklı bir cihaz dene.';
+            } else if ( err.name === 'NotReadableError' || err.name === 'TrackStartError' ) {
+                errorMessage = 'Kamera kullanımda. Diğer uygulamaları kapatıp tekrar dene.';
+            } else if ( err.name === 'OverconstrainedError' || err.name === 'ConstraintNotSatisfiedError' ) {
+                errorMessage = 'Kamera uyumlu değil. Başka bir cihaz kullan.';
+            } else if ( err.name === 'SecurityError' ) {
+                errorMessage = 'Güvenlik hatası. HTTPS üzerinden erişim gerekiyor.';
+            }
+
+            showError( `${errorMessage}<br><br><button type="button" class="btn-shadcn btn-shadcn-outline btn-shadcn-sm"
+            data-switch-manual>Kod Girerek Devam Et</button>`);
+            attachManualShortcut();
+        }
+
+        function processCheckIn( code ) {
+            if ( !code ) {
+                showError( 'Geçersiz QR kod.' );
+                return;
+            }
+
+            showInfo( '<i class="fas fa-spinner fa-spin"></i> Check-in işleniyor...' );
+
+            fetch( '/checkin/scan', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify( { code } )
+            } )
+                .then( response => response.json() )
+                .then( data => {
+                    if ( data.error ) {
+                        showError( data.error );
+                    } else if ( data.success ) {
+                        showSuccess( `
+        <div class="space-y-1">
+            <div class="text-base font-semibold">Check-in Başarılı!</div>
+            <div class="text-sm">Ad: <strong>${data.reservation.name}</strong></div>
+            <div class="text-sm">Telefon: <strong>${data.reservation.phone}</strong></div>
+            <div class="text-sm">Koltuk: <strong>${data.reservation.seat_number}</strong></div>
+        </div>
+        `);
+                    }
+                } )
+                .catch( error => {
+                    console.error( 'Error:', error );
+                    showError( 'Bağlantı hatası. Lütfen tekrar dene.' );
+                } );
+        }
+
+        function checkIn() {
+            const code = document.getElementById( 'reservationCode' ).value.trim();
+            if ( !code ) {
+                showError( 'Lütfen rezervasyon kodunu gir.' );
+                return;
+            }
+            processCheckIn( code );
+        }
+
+        function showError( message ) {
+            resultContainer.innerHTML = `
+        <div class="alert-shadcn alert-shadcn-destructive scanner-toast">
+            <div class="flex items-start gap-3">
+                <i class="fas fa-exclamation-triangle mt-1"></i>
+                <div class="text-sm leading-relaxed">${message}</div>
+            </div>
+        </div>`;
+        }
+
+        function showSuccess( message ) {
+            const reservationInput = document.getElementById( 'reservationCode' );
+            if ( reservationInput ) {
+                reservationInput.value = '';
+            }
+
+            resultContainer.innerHTML = `
+        <div class="alert-shadcn alert-shadcn-default scanner-toast">
+            <div class="flex items-start gap-3">
+                <i class="fas fa-check-circle text-emerald-500 mt-1"></i>
+                <div class="space-y-1 text-sm leading-relaxed">${message}</div>
+            </div>
+        </div>`;
+
+            setTimeout( () => {
+                clearResult();
+            }, 5000 );
+        }
+
+        function showInfo( message ) {
+            resultContainer.innerHTML = `
+        <div class="alert-shadcn alert-shadcn-default scanner-toast">
+            <div class="flex items-start gap-3">
+                <i class="fas fa-info-circle text-sky-500 mt-1"></i>
+                <div class="text-sm leading-relaxed">${message}</div>
+            </div>
+        </div>`;
+        }
+
+        function clearResult() {
+            resultContainer.innerHTML = '';
+        }
+
+        function attachManualShortcut() {
+            const manualButton = resultContainer.querySelector( '[data-switch-manual]' );
+            if ( manualButton ) {
+                manualButton.addEventListener( 'click', () => {
+                    switchToManual();
+                    clearResult();
+                }, { once: true } );
+            }
+        }
+
+        window.addEventListener( 'beforeunload', () => {
+            if ( isScanning ) {
+                stopScanner();
+            }
+        } );
+    </script>
+        {% endblock %}

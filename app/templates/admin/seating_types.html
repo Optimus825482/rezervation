@@ -1,0 +1,208 @@
+{% extends "base.html" %}
+{% block title %}Koltuk Türleri Yönetimi{% endblock %}
+{% block content %}
+<div class="space-y-6">
+    <div class="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+        <div class="space-y-1">
+            <p class="text-xs uppercase tracking-[0.3em] text-slate-400 dark:text-slate-600">Koltuk yönetimi</p>
+            <h1 class="text-3xl font-bold text-slate-900 dark:text-white">Koltuk Türleri Yönetimi</h1>
+            <p class="text-sm text-slate-600 dark:text-slate-400">Standardize koltuk planlarıyla etkinlik kurulumunu
+                hızlandır.</p>
+        </div>
+        <div class="flex flex-wrap gap-2">
+            <a href="{{ url_for('event.index') }}" class="btn-shadcn btn-shadcn-outline btn-shadcn-sm">
+                <i class="fas fa-calendar"></i>
+                <span>Etkinliklere Dön</span>
+            </a>
+            <a href="{{ url_for('template.seating_templates') }}" class="btn-shadcn btn-shadcn-ghost btn-shadcn-sm">
+                <i class="fas fa-layer-group"></i>
+                <span>Şablonlar</span>
+            </a>
+        </div>
+    </div>
+
+    <section class="card-shadcn">
+        <div class="card-shadcn-header pb-4">
+            <div class="flex items-center gap-3">
+                <span class="inline-flex h-11 w-11 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                    <i class="fas fa-plus"></i>
+                </span>
+                <div>
+                    <h2 class="card-shadcn-title text-lg">Yeni Koltuk Türü</h2>
+                    <p class="card-shadcn-description">Kapasite ve renk bilgileriyle birlikte standart bir koltuk türü
+                        tanımla.</p>
+                </div>
+            </div>
+        </div>
+        <form method="POST" action="{{ url_for('admin.create_seating_type') }}" class="card-shadcn-content space-y-5">
+            <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
+                <label class="space-y-2 xl:col-span-2">
+                    <span class="label-shadcn">Ad</span>
+                    <input type="text" class="input-shadcn" name="name" required placeholder="VIP Masa">
+                </label>
+                <label class="space-y-2">
+                    <span class="label-shadcn">Tür</span>
+                    <select class="input-shadcn" name="seat_type" required>
+                        <option value="table">Masa</option>
+                        <option value="chair">Sandalye</option>
+                    </select>
+                </label>
+                <label class="space-y-2">
+                    <span class="label-shadcn">Kapasite</span>
+                    <input type="number" class="input-shadcn" name="capacity" required min="1" value="4">
+                </label>
+                <label class="space-y-2">
+                    <span class="label-shadcn">Renk</span>
+                    <input type="color" class="input-shadcn" name="color_code" value="#3498db">
+                </label>
+            </div>
+            <div class="flex flex-col gap-3 pt-2 sm:flex-row sm:justify-end">
+                <button type="reset" class="btn-shadcn btn-shadcn-ghost sm:w-auto">
+                    <i class="fas fa-undo"></i>
+                    <span>Temizle</span>
+                </button>
+                <button type="submit" class="btn-shadcn btn-shadcn-default sm:w-auto">
+                    <i class="fas fa-save"></i>
+                    <span>Şablon Ekle</span>
+                </button>
+            </div>
+        </form>
+    </section>
+
+    <div class="grid gap-6 lg:grid-cols-[2fr,1fr]">
+        <section class="card-shadcn">
+            <div class="card-shadcn-header pb-4">
+                <div class="flex items-center gap-3">
+                    <span
+                        class="inline-flex h-11 w-11 items-center justify-center rounded-xl bg-slate-900/10 text-slate-900 dark:bg-slate-100/10 dark:text-slate-100">
+                        <i class="fas fa-layer-group"></i>
+                    </span>
+                    <div>
+                        <h2 class="card-shadcn-title text-lg">Mevcut Koltuk Türleri</h2>
+                        <p class="card-shadcn-description">Var olan tanımları güncel tutarak salon planlarında
+                            tutarlılık sağla.</p>
+                    </div>
+                </div>
+            </div>
+            <div class="card-shadcn-content p-0">
+                {% if seating_types %}
+                <div class="overflow-x-auto">
+                    <table class="min-w-full text-left text-sm text-slate-600 dark:text-slate-300">
+                        <thead
+                            class="bg-slate-50 text-xs font-semibold uppercase tracking-[0.2em] text-slate-400 dark:bg-slate-900/40 dark:text-slate-500">
+                            <tr>
+                                <th class="py-3 pl-6 pr-4">ID</th>
+                                <th class="py-3 px-4">Ad</th>
+                                <th class="py-3 px-4">Tür</th>
+                                <th class="py-3 px-4">Kapasite</th>
+                                <th class="py-3 px-4">Renk</th>
+                                <th class="py-3 px-4">Önizleme</th>
+                                <th class="py-3 px-4 text-right">İşlemler</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
+                            {% for st in seating_types %}
+                            <tr class="transition hover:bg-slate-50 dark:hover:bg-slate-900/40">
+                                <td class="py-3 pl-6 pr-4 font-medium text-slate-900 dark:text-white">{{ st.id }}</td>
+                                <td class="py-3 px-4 text-slate-700 dark:text-slate-300">{{ st.name }}</td>
+                                <td class="py-3 px-4">
+                                    {% if st.seat_type == 'table' %}
+                                    <span class="badge-shadcn badge-shadcn-outline text-primary border-primary/30">
+                                        <i class="fas fa-utensils mr-1"></i>
+                                        Masa
+                                    </span>
+                                    {% else %}
+                                    <span class="badge-shadcn badge-shadcn-secondary">
+                                        <i class="fas fa-chair mr-1"></i>
+                                        Sandalye
+                                    </span>
+                                    {% endif %}
+                                </td>
+                                <td class="py-3 px-4">{{ st.capacity }} kişi</td>
+                                <td class="py-3 px-4 font-mono text-xs uppercase">{{ st.color_code }}</td>
+                                <td class="py-3 px-4">
+                                    <div class="h-10 w-10 rounded-full border-2 border-slate-200 dark:border-slate-700"
+                                        style="background-color: {{ st.color_code }};"></div>
+                                </td>
+                                <td class="py-3 px-4 text-right">
+                                    <form method="POST"
+                                        action="{{ url_for('admin.delete_seating_type', type_id=st.id) }}"
+                                        class="inline-flex" data-seating-delete>
+                                        <button type="submit" class="btn-shadcn btn-shadcn-destructive btn-shadcn-sm">
+                                            <i class="fas fa-trash"></i>
+                                            <span>Sil</span>
+                                        </button>
+                                    </form>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="p-6">
+                    <div class="alert-shadcn alert-shadcn-default">
+                        <div class="flex items-start gap-3">
+                            <i class="fas fa-info-circle text-primary"></i>
+                            <div>
+                                <p class="text-sm text-slate-600 dark:text-slate-300">Henüz koltuk türü eklenmemiş.</p>
+                                <p class="text-xs text-slate-500 dark:text-slate-400">Yeni bir kayıt eklemek için
+                                    üstteki formu kullan.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </section>
+
+        <section
+            class="card-shadcn border border-dashed border-slate-200 bg-slate-50 dark:border-slate-800 dark:bg-slate-900/40">
+            <div class="card-shadcn-content space-y-3">
+                <div class="flex items-center gap-3">
+                    <span
+                        class="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                        <i class="fas fa-lightbulb"></i>
+                    </span>
+                    <div>
+                        <p class="text-sm font-semibold text-slate-800 dark:text-white">Planlama İpuçları</p>
+                        <p class="text-xs text-slate-500 dark:text-slate-400">Salon düzenlerini hızlı oluşturmak için bu
+                            önerileri kullan.</p>
+                    </div>
+                </div>
+                <ul class="space-y-2 text-sm text-slate-600 dark:text-slate-300">
+                    <li class="flex gap-2">
+                        <i class="fas fa-circle text-[0.45rem] pt-2 text-primary"></i>
+                        <span>Renk paletini oturma planlarıyla eşleştirerek alan ayrımlarını kolaylaştır.</span>
+                    </li>
+                    <li class="flex gap-2">
+                        <i class="fas fa-circle text-[0.45rem] pt-2 text-primary"></i>
+                        <span>Kapalı alanlarda sandalye tiplerini, açık alanlarda masa tiplerini
+                            önceliklendirebilirsin.</span>
+                    </li>
+                    <li class="flex gap-2">
+                        <i class="fas fa-circle text-[0.45rem] pt-2 text-primary"></i>
+                        <span>VIP alanlar için ayrı bir renk ve kapasite seçerek hızlı filtreleme yap.</span>
+                    </li>
+                </ul>
+            </div>
+        </section>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+{{ super() }}
+<script{% if g.csp_nonce %} nonce="{{ g.csp_nonce }}" {% endif %}>
+    document.addEventListener( 'DOMContentLoaded', () => {
+        document.querySelectorAll( '[data-seating-delete]' ).forEach( ( form ) => {
+            form.addEventListener( 'submit', ( event ) => {
+                const confirmed = window.confirm( 'Bu koltuk türünü silmek istediğine emin misin?' );
+                if ( !confirmed ) {
+                    event.preventDefault();
+                }
+            } );
+        } );
+    } );
+</script>
+    {% endblock %}

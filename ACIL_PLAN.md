@@ -1,0 +1,147 @@
+# ACIL GELİŞTİRME PLANI - YÜKSEK ÖNCELİK
+
+**Tarih:** 08.11.2025  
+**Odak:** SQLAlchemy hatası çözüldü, şimdi acil eksiklikler
+
+---
+
+## 🚨 YÜKSEK ÖNCELİK (Kritik) EKSİKLİKLER
+
+### 1. DASHBOARD İSTATİSTİKLERİ (En Acil)
+**Mevcut Durum:** Sadece temel kontroller var
+**Hedef:** Canlı istatistik kartları
+
+**Gerekli Özellikler:**
+- ✅ Toplam Kapasite hesaplaması
+- ✅ Rezerve Edilen Koltuk sayısı
+- ✅ Boş Koltuk sayısı  
+- ✅ Doluluk Oranı (%) 
+- ✅ Güncel Check-in Sayısı
+
+**Teknik Gereksinimler:**
+- Real-time veri güncelleme
+- Chart.js entegrasyonu
+- JSON API endpoint
+
+---
+
+### 2. GÖRSEL OTURUM DÜZENLEME (Drag & Drop)
+**Mevcut Durum:** Temel visual-editor.js var
+**Hedef:** Tam fonksiyonel görsel editör
+
+**Gerekli Özellikler:**
+- ✅ Sahne konumu belirleme
+- ✅ Oturum sürükle-bırak
+- ✅ Grid sistem ve hizalama
+- ✅ Zoom in/out
+- ✅ Oturum renkleri
+- ✅ Hover detayları
+- ✅ Anlık kaydetme
+
+**Teknik Gereksinimler:**
+- HTML5 Canvas veya SVG
+- Drag & Drop kütüphanesi
+- Real-time veritabanı sync
+
+---
+
+### 3. GELİŞMİŞ RAPORLAMA SİSTEMİ
+**Mevcut Durum:** Sadece temel summary
+**Hedef:** Kapsamlı raporlama
+
+**Gerekli Raporlar:**
+- ✅ Genel Özet Raporu
+- ✅ Etkinlik Detay Raporu
+- ✅ Rezervasyon Analiz Raporu
+- ✅ Doluluk Analiz Raporu
+- ✅ Müşteri Analiz Raporu
+
+**Teknik Gereksinimler:**
+- Chart.js grafik kütüphanesi
+- PDF export (ReportLab)
+- Excel export (openpyxl)
+- Filtreleme sistemi
+
+---
+
+### 4. FİYATLANDIRMA SİSTEMİ
+**Mevcut Durum:** Tamamen eksik
+**Hedef:** Oturum bazlı fiyatlandırma
+
+**Gerekli Özellikler:**
+- ✅ Oturum tipi fiyatları
+- ✅ Etkinlik genel fiyat politikası
+- ✅ Rezervasyon toplam hesaplama
+- ✅ Fiyat gösterimi
+
+**Veritabanı Değişiklikleri:**
+- EventSeating.price alanı
+- SeatingType.default_price
+- Rezervasyon total_price
+
+---
+
+### 5. REZERVASYON YÖNETİMİ (Gelişmiş)
+**Mevcut Durum:** Temel listeleme
+**Hedef:** Kapsamlı yönetim sistemi
+
+**Gerekli Özellikler:**
+- ✅ Tarih aralığı filtreleri
+- ✅ Durum filtreleri
+- ✅ Ad/telefon arama
+- ✅ Rezervasyon düzenleme
+- ✅ Toplu işlemler
+
+**Teknik Gereksinimler:**
+- Ajax arama
+- Pagination
+- Bulk operations API
+- Form validasyonu
+
+---
+
+## 📋 ACİL ADIMLAR (Sırayla)
+
+### ADIM 1: Dashboard İstatistikleri
+- [ ] Chart.js kütüphanesi ekle
+- [ ] İstatistik API endpoints oluştur
+- [ ] Dashboard template güncelle
+- [ ] Real-time güncelleme
+
+### ADIM 2: Fiyatlandırma Sistemi  
+- [ ] Veritabanı fiyat alanları ekle
+- [ ] SeatingType ve EventSeating güncelle
+- [ ] Fiyat hesaplama servisleri
+- [ ] Frontend fiyat gösterimi
+
+### ADIM 3: Görsel Editör Geliştirme
+- [ ] Drag & Drop kütüphanesi ekle
+- [ ] Canvas editör geliştir
+- [ ] Oturum düzenleme UI
+- [ ] Kaydetme/yükleme sistemi
+
+### ADIM 4: Gelişmiş Raporlama
+- [ ] Chart kütüphaneleri entegre et
+- [ ] Rapor API'leri geliştir
+- [ ] PDF/Excel export
+- [ ] Grafik temlate'leri
+
+### ADIM 5: Rezervasyon Yönetimi
+- [ ] Arama/filtreleme UI
+- [ ] Düzenleme formları
+- [ ] Toplu işlemler
+- [ ] Validation geliştir
+
+---
+
+## ⚡ HEMEN BAŞLAYACAĞIM: DASHBOARD İSTATİSTİKLERİ
+
+**En kritik eksiklik:** Sistem yöneticileri mevcut durumu göremiyor
+
+**Hedef:** Real-time dashboard kartları
+- Kapasite, rezerve, boş koltuk sayıları
+- Doluluk oranı yüzdesi
+- Güncel check-in sayısı
+- Canlı grafikler
+
+**Başlangıç Zamanı:** Şimdi

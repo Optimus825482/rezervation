@@ -1,0 +1,528 @@
+/* shadcn/ui ilhamlı bileşenlerin CDN ortamında çalışması için saf CSS tanımları */
+
+:root {
+    --background: 0 0% 100%;
+    --foreground: 222.2 84% 4.9%;
+    --card: 0 0% 100%;
+    --card-foreground: 222.2 84% 4.9%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 222.2 84% 4.9%;
+    --primary: 16 100% 61%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 210 40% 15%;
+    --secondary-foreground: 0 0% 100%;
+    --muted: 210 40% 96.1%;
+    --muted-foreground: 215.4 16.3% 46.9%;
+    --accent: 27 100% 56%;
+    --accent-foreground: 0 0% 100%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 214.3 31.8% 91.4%;
+    --input: 214.3 31.8% 91.4%;
+    --ring: 16 100% 61%;
+    --radius: 0.5rem;
+}
+
+.dark {
+    --background: 222.2 84% 4.9%;
+    --foreground: 210 40% 98%;
+    --card: 222.2 84% 4.9%;
+    --card-foreground: 210 40% 98%;
+    --popover: 222.2 84% 4.9%;
+    --popover-foreground: 210 40% 98%;
+    --primary: 16 100% 61%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 217.2 32.6% 17.5%;
+    --secondary-foreground: 210 40% 98%;
+    --muted: 217.2 32.6% 17.5%;
+    --muted-foreground: 215 20.2% 65.1%;
+    --accent: 27 100% 56%;
+    --accent-foreground: 0 0% 100%;
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 217.2 32.6% 17.5%;
+    --input: 217.2 32.6% 17.5%;
+    --ring: 16 100% 61%;
+}
+
+body {
+    background-color: hsl(var(--background));
+    color: hsl(var(--foreground));
+}
+
+/* Button */
+.btn-shadcn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    white-space: nowrap;
+    border-radius: 0.375rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+    line-height: 1.25rem;
+    border: 1px solid transparent;
+    padding: 0.5rem 1rem;
+    transition: all 0.2s ease;
+    cursor: pointer;
+    position: relative;
+    user-select: none;
+    text-decoration: none;
+    background-color: transparent;
+    color: hsl(var(--foreground));
+}
+
+.btn-shadcn:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 2px hsl(var(--ring) / 0.4), 0 0 0 4px hsl(var(--background));
+}
+
+.btn-shadcn:disabled {
+    cursor: not-allowed;
+    opacity: 0.6;
+}
+
+.btn-shadcn-default {
+    border-color: hsl(var(--primary));
+    background-color: hsl(var(--primary));
+    color: hsl(var(--primary-foreground));
+    min-height: 2.5rem;
+}
+
+.btn-shadcn-default:hover {
+    background-color: hsl(var(--primary) / 0.9);
+}
+
+.btn-shadcn-destructive {
+    border-color: hsl(var(--destructive));
+    background-color: hsl(var(--destructive));
+    color: hsl(var(--destructive-foreground));
+    min-height: 2.5rem;
+}
+
+.btn-shadcn-destructive:hover {
+    background-color: hsl(var(--destructive) / 0.85);
+}
+
+.btn-shadcn-outline {
+    border-color: hsl(var(--input));
+    background-color: hsl(var(--background));
+    color: hsl(var(--foreground));
+    min-height: 2.5rem;
+}
+
+.btn-shadcn-outline:hover {
+    background-color: hsl(var(--accent));
+    color: hsl(var(--accent-foreground));
+}
+
+.btn-shadcn-secondary {
+    border-color: hsl(var(--secondary));
+    background-color: hsl(var(--secondary));
+    color: hsl(var(--secondary-foreground));
+    min-height: 2.5rem;
+}
+
+.btn-shadcn-secondary:hover {
+    background-color: hsl(var(--secondary) / 0.8);
+}
+
+.btn-shadcn-ghost {
+    min-height: 2.5rem;
+}
+
+.btn-shadcn-ghost:hover {
+    background-color: hsl(var(--accent) / 0.15);
+    color: hsl(var(--accent-foreground));
+}
+
+.btn-shadcn-link {
+    min-height: 2.5rem;
+    color: hsl(var(--primary));
+    text-decoration: none;
+}
+
+.btn-shadcn-link:hover {
+    text-decoration: underline;
+}
+
+.btn-shadcn-sm {
+    min-height: 2.25rem;
+    padding: 0.375rem 0.75rem;
+    border-radius: 0.375rem;
+}
+
+.btn-shadcn-lg {
+    min-height: 2.75rem;
+    padding: 0.5rem 2rem;
+    border-radius: 0.5rem;
+}
+
+.btn-shadcn-icon {
+    width: 2.5rem;
+    height: 2.5rem;
+    padding: 0.5rem;
+}
+
+/* Card */
+.card-shadcn {
+    border-radius: 0.75rem;
+    border: 1px solid hsl(var(--border));
+    background-color: hsl(var(--card));
+    color: hsl(var(--card-foreground));
+    box-shadow: 0 1px 3px rgba(15, 23, 42, 0.08);
+    overflow: hidden;
+}
+
+.card-shadcn-header {
+    display: flex;
+    flex-direction: column;
+    row-gap: 0.375rem;
+    padding: 1.5rem;
+}
+
+.card-shadcn-title {
+    font-size: 1.5rem;
+    font-weight: 600;
+    line-height: 1.25;
+    letter-spacing: -0.01em;
+    color: inherit;
+}
+
+.card-shadcn-description {
+    font-size: 0.875rem;
+    color: hsl(var(--muted-foreground));
+}
+
+.card-shadcn-content {
+    padding: 1.5rem;
+    padding-top: 0;
+}
+
+.card-shadcn-footer {
+    display: flex;
+    align-items: center;
+    padding: 1.5rem;
+    padding-top: 0;
+    gap: 1rem;
+}
+
+/* Badge */
+.badge-shadcn {
+    display: inline-flex;
+    align-items: center;
+    border-radius: 9999px;
+    border: 1px solid transparent;
+    padding: 0.125rem 0.75rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+    line-height: 1.25;
+    transition: all 0.2s ease;
+}
+
+.badge-shadcn-default {
+    background-color: hsl(var(--primary));
+    color: hsl(var(--primary-foreground));
+    border-color: transparent;
+}
+
+.badge-shadcn-secondary {
+    background-color: hsl(var(--secondary));
+    color: hsl(var(--secondary-foreground));
+    border-color: transparent;
+}
+
+.badge-shadcn-destructive {
+    background-color: hsl(var(--destructive));
+    color: hsl(var(--destructive-foreground));
+    border-color: transparent;
+}
+
+.badge-shadcn-outline {
+    border-color: hsl(var(--border));
+    color: hsl(var(--foreground));
+    background-color: transparent;
+}
+
+/* Input */
+.input-shadcn {
+    display: flex;
+    height: 2.5rem;
+    width: 100%;
+    border-radius: 0.375rem;
+    border: 1px solid hsl(var(--input));
+    background-color: hsl(var(--background));
+    color: hsl(var(--foreground));
+    padding: 0 0.75rem;
+    font-size: 0.875rem;
+    line-height: 1.25;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.input-shadcn::placeholder {
+    color: hsl(var(--muted-foreground));
+    opacity: 0.8;
+}
+
+.input-shadcn:focus-visible {
+    outline: none;
+    border-color: hsl(var(--ring));
+    box-shadow: 0 0 0 2px hsl(var(--ring) / 0.2);
+}
+
+.input-shadcn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.input-shadcn[type="file"] {
+    padding: 0.375rem 0.5rem;
+}
+
+.input-shadcn[type="color"] {
+    padding: 0.25rem;
+    height: 2.5rem;
+    width: 100%;
+}
+
+.textarea-shadcn {
+    width: 100%;
+    min-height: 6.5rem;
+    border-radius: 0.5rem;
+    border: 1px solid hsl(var(--input));
+    background-color: hsl(var(--background));
+    color: hsl(var(--foreground));
+    padding: 0.75rem;
+    font-size: 0.875rem;
+    line-height: 1.4;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    resize: vertical;
+}
+
+.textarea-shadcn::placeholder {
+    color: hsl(var(--muted-foreground));
+    opacity: 0.8;
+}
+
+.textarea-shadcn:focus-visible {
+    outline: none;
+    border-color: hsl(var(--ring));
+    box-shadow: 0 0 0 2px hsl(var(--ring) / 0.2);
+}
+
+.textarea-shadcn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+/* Label */
+.label-shadcn {
+    display: inline-flex;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: hsl(var(--foreground));
+    line-height: 1.25rem;
+}
+
+.label-shadcn[aria-disabled="true"] {
+    opacity: 0.7;
+    cursor: not-allowed;
+}
+
+/* Dropdown */
+.dropdown-menu-shadcn {
+    z-index: 50;
+    min-width: 8rem;
+    border-radius: 0.5rem;
+    border: 1px solid hsl(var(--border));
+    background-color: hsl(var(--popover));
+    color: hsl(var(--popover-foreground));
+    padding: 0.25rem;
+    box-shadow: 0 10px 40px rgba(15, 23, 42, 0.18);
+}
+
+.dropdown-menu-item-shadcn {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    border-radius: 0.375rem;
+    padding: 0.375rem 0.75rem;
+    font-size: 0.875rem;
+    color: inherit;
+    cursor: pointer;
+    transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+.dropdown-menu-item-shadcn:hover,
+.dropdown-menu-item-shadcn:focus-visible {
+    background-color: hsl(var(--accent) / 0.12);
+    color: hsl(var(--accent-foreground));
+}
+
+.dropdown-menu-item-shadcn[aria-disabled="true"] {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* Alert */
+.alert-shadcn {
+    width: 100%;
+    border-radius: 0.75rem;
+    border: 1px solid hsl(var(--border));
+    padding: 1rem 1.25rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.alert-shadcn-default {
+    background-color: hsl(var(--background));
+    color: hsl(var(--foreground));
+}
+
+.alert-shadcn-destructive {
+    border-color: hsl(var(--destructive) / 0.5);
+    background-color: hsl(var(--destructive) / 0.12);
+    color: hsl(var(--destructive));
+}
+
+.alert-shadcn-title {
+    font-size: 1rem;
+    font-weight: 600;
+}
+
+.alert-shadcn-description {
+    font-size: 0.875rem;
+    line-height: 1.5;
+}
+
+/* Separator */
+.separator-shadcn {
+    background-color: hsl(var(--border));
+    border: none;
+}
+
+.separator-shadcn-horizontal {
+    width: 100%;
+    height: 1px;
+}
+
+.separator-shadcn-vertical {
+    width: 1px;
+    align-self: stretch;
+}
+
+/* Table */
+.table-shadcn {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.875rem;
+}
+
+.table-shadcn caption {
+    caption-side: bottom;
+    color: hsl(var(--muted-foreground));
+    padding-top: 0.75rem;
+}
+
+.table-shadcn thead tr {
+    border-bottom: 1px solid hsl(var(--border));
+}
+
+.table-shadcn th {
+    text-align: left;
+    padding: 0.75rem 1rem;
+    font-weight: 500;
+    color: hsl(var(--muted-foreground));
+}
+
+.table-shadcn td {
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid hsl(var(--border));
+}
+
+.table-shadcn tbody tr:last-child td {
+    border-bottom: none;
+}
+
+.table-shadcn tbody tr:hover {
+    background-color: hsl(var(--muted) / 0.5);
+}
+
+.table-shadcn tfoot {
+    border-top: 1px solid hsl(var(--border));
+    background-color: hsl(var(--muted) / 0.5);
+    font-weight: 500;
+}
+
+/* Avatar */
+.avatar-shadcn {
+    position: relative;
+    display: flex;
+    width: 2.5rem;
+    height: 2.5rem;
+    overflow: hidden;
+    border-radius: 9999px;
+}
+
+.avatar-shadcn-image {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.avatar-shadcn-fallback {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: hsl(var(--muted));
+    color: hsl(var(--muted-foreground));
+    font-weight: 600;
+}
+
+/* Animations */
+@keyframes shadcn-fade-in {
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
+}
+
+@keyframes shadcn-slide-in {
+    from {
+        transform: translateY(-10px);
+        opacity: 0;
+    }
+
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+.animate-shadcn-in {
+    animation: shadcn-fade-in 0.2s ease-in-out;
+}
+
+.animate-shadcn-slide-in {
+    animation: shadcn-slide-in 0.3s ease-out;
+}
+
+@keyframes shadcn-fade-out {
+    from {
+        opacity: 1;
+    }
+
+    to {
+        opacity: 0;
+    }
+}
+
+.animate-shadcn-fade-out {
+    animation: shadcn-fade-out 0.2s ease forwards;
+}

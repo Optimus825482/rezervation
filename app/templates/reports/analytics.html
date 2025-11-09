@@ -1,0 +1,750 @@
+{% extends "base.html" %}
+
+{% block title %}Gelişmiş Analitik Raporlama - EventFlow{% endblock %}
+
+{% block extra_css %}
+<!-- Chart.js CDN -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.min.js"></script>
+<script
+    src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@3.0.0/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/date-fns@2.30.0/dist/date-fns.min.js"></script>
+<!-- DataTables -->
+<link href="https://cdn.datatables.net/1.13.7/css/dataTables.bootstrap5.min.css" rel="stylesheet">
+<link href="https://cdn.datatables.net/responsive/2.5.0/css/responsive.bootstrap5.min.css" rel="stylesheet">
+<!-- DateRangePicker -->
+<link href="https://cdn.jsdelivr.net/npm/daterangepicker@3.1.0/daterangepicker.css" rel="stylesheet">
+<style>
+    .chart-container {
+        position: relative;
+        height: 400px;
+        margin: 1rem 0;
+    }
+
+    .metric-card {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border-radius: 1rem;
+        padding: 1.5rem;
+        color: white;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .metric-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: linear-gradient(45deg, transparent 30%, rgba(255, 255, 255, 0.1) 50%, transparent 70%);
+        transform: translateX(-100%);
+        transition: transform 0.6s;
+    }
+
+    .metric-card:hover::before {
+        transform: translateX(100%);
+    }
+
+    .report-section {
+        border: 1px solid #e2e8f0;
+        border-radius: 1rem;
+        padding: 1.5rem;
+        margin-bottom: 1.5rem;
+        background: white;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    }
+
+    .export-buttons {
+        display: flex;
+        gap: 0.5rem;
+        flex-wrap: wrap;
+    }
+
+    .loading-spinner {
+        display: inline-block;
+        width: 1rem;
+        height: 1rem;
+        border: 2px solid #f3f3f3;
+        border-top: 2px solid #3498db;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+        0% {
+            transform: rotate(0deg);
+        }
+
+        100% {
+            transform: rotate(360deg);
+        }
+    }
+
+    .occupancy-heat {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(60px, 1fr));
+        gap: 0.5rem;
+        margin: 1rem 0;
+    }
+
+    .heat-cell {
+        aspect-ratio: 1;
+        border-radius: 0.5rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.75rem;
+        font-weight: bold;
+        color: white;
+        text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+    }
+
+    .heat-low {
+        background: #10b981;
+    }
+
+    .heat-medium {
+        background: #f59e0b;
+    }
+
+    .heat-high {
+        background: #ef4444;
+    }
+
+    .heat-full {
+        background: #7c2d12;
+    }
+
+    .trend-indicator {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.25rem;
+        padding: 0.25rem 0.5rem;
+        border-radius: 0.5rem;
+        font-size: 0.75rem;
+        font-weight: 600;
+    }
+
+    .trend-up {
+        background: #dcfce7;
+        color: #166534;
+    }
+
+    .trend-down {
+        background: #fee2e2;
+        color: #991b1b;
+    }
+
+    .trend-stable {
+        background: #f3f4f6;
+        color: #374151;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto">
+    <!-- Sayfa Başlığı -->
+    <div class="mb-8">
+        <div class="flex items-center justify-between">
+            <div>
+                <h1 class="text-3xl font-bold text-slate-900 dark:text-white">
+                    <i class="fas fa-chart-line mr-3 text-primary-600"></i>
+                    Gelişmiş Analitik Raporlama
+                </h1>
+                <p class="mt-2 text-slate-600 dark:text-slate-400">
+                    Etkinlik performansınızı detaylı analiz edin ve raporlarınızı dışa aktarın
+                </p>
+            </div>
+            <div class="export-buttons">
+                <button onclick="exportReport('pdf')" class="btn-shadcn btn-shadcn-primary">
+                    <i class="fas fa-file-pdf mr-2"></i>PDF
+                </button>
+                <button onclick="exportReport('excel')" class="btn-shadcn btn-shadcn-secondary">
+                    <i class="fas fa-file-excel mr-2"></i>Excel
+                </button>
+                <button onclick="exportReport('csv')" class="btn-shadcn btn-shadcn-outline">
+                    <i class="fas fa-file-csv mr-2"></i>CSV
+                </button>
+                <button onclick="exportReport('json')" class="btn-shadcn btn-shadcn-ghost">
+                    <i class="fas fa-file-code mr-2"></i>JSON
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Etkinlik Seçimi ve Filtreler -->
+    <div class="report-section">
+        <h2 class="text-xl font-semibold mb-4">
+            <i class="fas fa-filter mr-2 text-primary-600"></i>
+            Filtreler ve Seçenekler
+        </h2>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
+                <label class="block text-sm font-medium mb-2">Etkinlik Seçin</label>
+                <select id="event-select"
+                    class="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary-500">
+                    <option value="">Etkinlik seçiniz...</option>
+                    {% for event in events %}
+                    <option value="{{ event.id }}" {% if event.id==selected_event_id %}selected{% endif %}>
+                        {{ event.name }} - {{ event.event_date.strftime('%d.%m.%Y') if event.event_date else 'Tarih yok'
+                        }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div>
+                <label class="block text-sm font-medium mb-2">Rapor Tipi</label>
+                <select id="report-type" class="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary-500">
+                    <option value="overview">Genel Özet Raporu</option>
+                    <option value="trends">Rezervasyon Analiz Raporu</option>
+                    <option value="seating">Doluluk Analiz Raporu</option>
+                    <option value="customers">Müşteri Analiz Raporu</option>
+                    <option value="comprehensive">Kapsamlı Rapor</option>
+                </select>
+            </div>
+            <div>
+                <label class="block text-sm font-medium mb-2">Tarih Aralığı</label>
+                <input type="text" id="date-range"
+                    class="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary-500"
+                    placeholder="Tarih aralığı seçin">
+            </div>
+        </div>
+        <div class="mt-4">
+            <button onclick="loadAnalytics()" class="btn-shadcn btn-shadcn-primary" id="load-btn">
+                <span class="loading-spinner hidden" id="loading-spinner"></span>
+                <i class="fas fa-chart-bar mr-2"></i>
+                Analizi Yükle
+            </button>
+        </div>
+    </div>
+
+    <!-- Hızlı Metrikler -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8" id="quick-metrics">
+        <!-- Metrikler JavaScript ile doldurulacak -->
+    </div>
+
+    <!-- Grafikler ve Analizler -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8" id="charts-container">
+        <!-- Grafikler JavaScript ile doldurulacak -->
+    </div>
+
+    <!-- Detaylı Tablolar -->
+    <div class="report-section" id="detailed-tables">
+        <h2 class="text-xl font-semibold mb-4">
+            <i class="fas fa-table mr-2 text-primary-600"></i>
+            Detaylı Analiz Tabloları
+        </h2>
+        <div class="overflow-x-auto">
+            <table id="analytics-table" class="table table-striped table-hover" style="width:100%">
+                <!-- Tablo JavaScript ile doldurulacak -->
+            </table>
+        </div>
+    </div>
+
+    <!-- Oturum Doluluk Haritası -->
+    <div class="report-section" id="seating-heat" style="display: none;">
+        <h2 class="text-xl font-semibold mb-4">
+            <i class="fas fa-th mr-2 text-primary-600"></i>
+            Oturum Doluluk Haritası
+        </h2>
+        <div class="occupancy-heat" id="heat-grid">
+            <!-- Isı haritası JavaScript ile doldurulacak -->
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<!-- DataTables JS -->
+<script src="https://cdn.datatables.net/1.13.7/js/jquery.dataTables.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.7/js/dataTables.bootstrap5.min.js"></script>
+<script src="https://cdn.datatables.net/responsive/2.5.0/js/dataTables.responsive.min.js"></script>
+<script src="https://cdn.datatables.net/responsive/2.5.0/js/responsive.bootstrap5.min.js"></script>
+<!-- DateRangePicker JS -->
+<script src="https://cdn.jsdelivr.net/npm/daterangepicker@3.1.0/daterangepicker.min.js"></script>
+
+<script>
+    // Global değişkenler
+    let currentData = null;
+    let currentCharts = {};
+
+    // Sayfa yüklendiğinde
+    document.addEventListener( 'DOMContentLoaded', function () {
+        initializeComponents();
+
+        // Eğer varsayılan etkinlik seçili ise analizi yükle
+        const eventSelect = document.getElementById( 'event-select' );
+        if ( eventSelect && eventSelect.value ) {
+            loadAnalytics();
+        }
+    } );
+
+    // Bileşenleri başlat
+    function initializeComponents() {
+        // DateRangePicker'ı başlat
+        $( '#date-range' ).daterangepicker( {
+            locale: {
+                format: 'DD.MM.YYYY',
+                separator: ' - ',
+                applyLabel: 'Uygula',
+                cancelLabel: 'İptal',
+                fromLabel: 'Başlangıç',
+                toLabel: 'Bitiş',
+                customRangeLabel: 'Özel Aralık',
+                weekLabel: 'H',
+                daysOfWeek: ['Paz', 'Pzt', 'Sal', 'Çar', 'Per', 'Cum', 'Cmt'],
+                monthNames: ['Ocak', 'Şubat', 'Mart', 'Nisan', 'Mayıs', 'Haziran', 'Temmuz', 'Ağustos', 'Eylül', 'Ekim', 'Kasım', 'Aralık']
+            },
+            ranges: {
+                'Son 7 gün': [moment().subtract( 6, 'days' ), moment()],
+                'Son 30 gün': [moment().subtract( 29, 'days' ), moment()],
+                'Bu ay': [moment().startOf( 'month' ), moment().endOf( 'month' )],
+                'Geçen ay': [moment().subtract( 1, 'month' ).startOf( 'month' ), moment().subtract( 1, 'month' ).endOf( 'month' )]
+            },
+            startDate: moment().subtract( 30, 'days' ),
+            endDate: moment()
+        } );
+
+        // Event select değişikliğini dinle
+        document.getElementById( 'event-select' ).addEventListener( 'change', function () {
+            if ( this.value ) {
+                loadAnalytics();
+            }
+        } );
+    }
+
+    // Analizi yükle
+    async function loadAnalytics() {
+        const eventId = document.getElementById( 'event-select' ).value;
+        const reportType = document.getElementById( 'report-type' ).value;
+        const dateRange = $( '#date-range' ).val();
+        const loadBtn = document.getElementById( 'load-btn' );
+        const loadingSpinner = document.getElementById( 'loading-spinner' );
+
+        if ( !eventId ) {
+            alert( 'Lütfen bir etkinlik seçiniz' );
+            return;
+        }
+
+        // Yükleme durumunu göster
+        loadBtn.disabled = true;
+        loadingSpinner.classList.remove( 'hidden' );
+        loadBtn.innerHTML = '<span class="loading-spinner"></span> Yükleniyor...';
+
+        try {
+            // API'den veri al
+            const response = await fetch( `/api/events/${eventId}/analytics?type=${reportType}&start_date=${dateRange}` );
+            const result = await response.json();
+
+            if ( result.success ) {
+                currentData = result.data;
+                renderAnalytics( result.data, reportType );
+            } else {
+                throw new Error( result.message || 'Veri yükleme hatası' );
+            }
+
+        } catch ( error ) {
+            console.error( 'Analiz yükleme hatası:', error );
+            alert( 'Analiz yüklenirken hata oluştu: ' + error.message );
+        } finally {
+            // Yükleme durumunu gizle
+            loadBtn.disabled = false;
+            loadingSpinner.classList.add( 'hidden' );
+            loadBtn.innerHTML = '<i class="fas fa-chart-bar mr-2"></i>Analizi Yükle';
+        }
+    }
+
+    // Analiz verilerini render et
+    function renderAnalytics( data, reportType ) {
+        renderQuickMetrics( data.overview || data );
+        renderCharts( data, reportType );
+        renderTables( data, reportType );
+        if ( data.seating ) {
+            renderSeatingHeatmap( data.seating );
+        }
+    }
+
+    // Hızlı metrikleri render et
+    function renderQuickMetrics( data ) {
+        const container = document.getElementById( 'quick-metrics' );
+        const metrics = [
+            {
+                title: 'Toplam Kapasite',
+                value: data.capacity_metrics?.total_capacity || 0,
+                icon: 'fas fa-users',
+                color: 'bg-blue-500'
+            },
+            {
+                title: 'Aktif Rezervasyon',
+                value: data.capacity_metrics?.active_reservations || 0,
+                icon: 'fas fa-ticket-alt',
+                color: 'bg-green-500'
+            },
+            {
+                title: 'Doluluk Oranı',
+                value: ( data.capacity_metrics?.occupancy_rate || 0 ) + '%',
+                icon: 'fas fa-percentage',
+                color: 'bg-purple-500'
+            },
+            {
+                title: 'Check-in Oranı',
+                value: ( data.reservation_metrics?.checkin_rate || 0 ) + '%',
+                icon: 'fas fa-check-circle',
+                color: 'bg-orange-500'
+            }
+        ];
+
+        container.innerHTML = metrics.map( metric => `
+        <div class="metric-card ${metric.color}">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-white/80 text-sm font-medium">${metric.title}</p>
+                    <p class="text-3xl font-bold">${metric.value}</p>
+                </div>
+                <i class="${metric.icon} text-4xl text-white/30"></i>
+            </div>
+        </div>
+    `).join( '' );
+    }
+
+    // Grafikleri render et
+    function renderCharts( data, reportType ) {
+        const container = document.getElementById( 'charts-container' );
+
+        // Mevcut grafikleri temizle
+        Object.values( currentCharts ).forEach( chart => {
+            if ( chart ) chart.destroy();
+        } );
+        currentCharts = {};
+
+        if ( data.trends && data.trends.daily_trends ) {
+            // Trend grafiği
+            const trendChart = createTrendChart( data.trends.daily_trends );
+            currentCharts.trend = trendChart;
+        }
+
+        if ( data.capacity_metrics ) {
+            // Doluluk pasta grafiği
+            const pieChart = createOccupancyChart( data.capacity_metrics );
+            currentCharts.pie = pieChart;
+        }
+
+        if ( data.customers && data.customers.segments ) {
+            // Müşteri segmentasyon grafiği
+            const segmentChart = createCustomerSegmentChart( data.customers.segments );
+            currentCharts.segments = segmentChart;
+        }
+
+        if ( data.timing && data.timing.hourly_distribution ) {
+            // Saatlik dağılım grafiği
+            const hourlyChart = createHourlyChart( data.timing.hourly_distribution );
+            currentCharts.hourly = hourlyChart;
+        }
+
+        // Container'ı güncelle
+        updateChartsContainer();
+    }
+
+    // Trend grafiği oluştur
+    function createTrendChart( dailyData ) {
+        const ctx = document.getElementById( 'trend-chart' );
+        if ( !ctx ) return null;
+
+        const labels = dailyData.map( item => new Date( item.date ).toLocaleDateString( 'tr-TR' ) );
+        const reservations = dailyData.map( item => item.reservations );
+        const checkins = dailyData.map( item => item.checkins );
+
+        return new Chart( ctx, {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'Rezervasyonlar',
+                    data: reservations,
+                    borderColor: 'rgb(59, 130, 246)',
+                    backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                    tension: 0.4,
+                    fill: true
+                }, {
+                    label: 'Check-in',
+                    data: checkins,
+                    borderColor: 'rgb(16, 185, 129)',
+                    backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                    tension: 0.4,
+                    fill: true
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            stepSize: 1
+                        }
+                    }
+                },
+                plugins: {
+                    title: {
+                        display: true,
+                        text: 'Günlük Rezervasyon ve Check-in Trendleri'
+                    }
+                }
+            }
+        } );
+    }
+
+    // Doluluk pasta grafiği oluştur
+    function createOccupancyChart( capacityData ) {
+        const ctx = document.getElementById( 'occupancy-chart' );
+        if ( !ctx ) return null;
+
+        const data = {
+            labels: ['Aktif Rezervasyon', 'Boş Koltuklar', 'İptal Edilen'],
+            datasets: [{
+                data: [
+                    capacityData.active_reservations || 0,
+                    capacityData.available_seats || 0,
+                    capacityData.cancelled || 0
+                ],
+                backgroundColor: [
+                    'rgb(16, 185, 129)',
+                    'rgb(156, 163, 175)',
+                    'rgb(239, 68, 68)'
+                ]
+            }]
+        };
+
+        return new Chart( ctx, {
+            type: 'doughnut',
+            data: data,
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    title: {
+                        display: true,
+                        text: 'Kapasite Dağılımı'
+                    }
+                }
+            }
+        } );
+    }
+
+    // Müşteri segmentasyon grafiği oluştur
+    function createCustomerSegmentChart( segments ) {
+        const ctx = document.getElementById( 'customer-chart' );
+        if ( !ctx ) return null;
+
+        const data = {
+            labels: Object.keys( segments ).map( key =>
+                key.replace( '_', ' ' ).replace( /\b\w/g, l => l.toUpperCase() )
+            ),
+            datasets: [{
+                data: Object.values( segments ),
+                backgroundColor: [
+                    'rgb(59, 130, 246)',
+                    'rgb(16, 185, 129)',
+                    'rgb(245, 158, 11)',
+                    'rgb(139, 92, 246)'
+                ]
+            }]
+        };
+
+        return new Chart( ctx, {
+            type: 'pie',
+            data: data,
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    title: {
+                        display: true,
+                        text: 'Müşteri Segmentasyonu'
+                    }
+                }
+            }
+        } );
+    }
+
+    // Saatlik dağılım grafiği oluştur
+    function createHourlyChart( hourlyData ) {
+        const ctx = document.getElementById( 'hourly-chart' );
+        if ( !ctx ) return null;
+
+        const hours = Array.from( { length: 24 }, ( _, i ) => i );
+        const counts = hours.map( hour => {
+            const data = hourlyData.find( item => item.hour === hour );
+            return data ? data.count : 0;
+        } );
+
+        return new Chart( ctx, {
+            type: 'bar',
+            data: {
+                labels: hours.map( h => `${h}:00` ),
+                datasets: [{
+                    label: 'Rezervasyon Sayısı',
+                    data: counts,
+                    backgroundColor: 'rgba(59, 130, 246, 0.6)',
+                    borderColor: 'rgb(59, 130, 246)',
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            stepSize: 1
+                        }
+                    }
+                },
+                plugins: {
+                    title: {
+                        display: true,
+                        text: 'Saatlik Rezervasyon Dağılımı'
+                    }
+                }
+            }
+        } );
+    }
+
+    // Grafik container'ını güncelle
+    function updateChartsContainer() {
+        const container = document.getElementById( 'charts-container' );
+        let html = '';
+
+        if ( currentCharts.trend ) {
+            html += `
+            <div class="bg-white p-6 rounded-lg shadow-sm border">
+                <canvas id="trend-chart" class="chart-container"></canvas>
+            </div>
+        `;
+        }
+
+        if ( currentCharts.pie ) {
+            html += `
+            <div class="bg-white p-6 rounded-lg shadow-sm border">
+                <canvas id="occupancy-chart" class="chart-container"></canvas>
+            </div>
+        `;
+        }
+
+        if ( currentCharts.segments ) {
+            html += `
+            <div class="bg-white p-6 rounded-lg shadow-sm border">
+                <canvas id="customer-chart" class="chart-container"></canvas>
+            </div>
+        `;
+        }
+
+        if ( currentCharts.hourly ) {
+            html += `
+            <div class="bg-white p-6 rounded-lg shadow-sm border">
+                <canvas id="hourly-chart" class="chart-container"></canvas>
+            </div>
+        `;
+        }
+
+        container.innerHTML = html;
+    }
+
+    // Detaylı tabloları render et
+    function renderTables( data, reportType ) {
+        const table = $( '#analytics-table' ).DataTable();
+        table.clear();
+
+        if ( data.reservations ) {
+            // Rezervasyon tablosu
+            data.reservations.forEach( res => {
+                table.row.add( [
+                    res.phone,
+                    res.first_name + ' ' + res.last_name,
+                    res.seat_number || '-',
+                    res.number_of_people,
+                    res.status,
+                    res.checked_in ? 'Evet' : 'Hayır',
+                    new Date( res.created_at ).toLocaleDateString( 'tr-TR' )
+                ] );
+            } );
+        }
+
+        table.draw();
+    }
+
+    // Oturum ısı haritasını render et
+    function renderSeatingHeatmap( seatingData ) {
+        const container = document.getElementById( 'seating-heat' );
+        const heatGrid = document.getElementById( 'heat-grid' );
+
+        if ( !seatingData || seatingData.length === 0 ) {
+            container.style.display = 'none';
+            return;
+        }
+
+        container.style.display = 'block';
+
+        const heatHtml = seatingData.map( seating => {
+            const rate = seating.occupancy_rate;
+            let heatClass = 'heat-low';
+
+            if ( rate >= 100 ) heatClass = 'heat-full';
+            else if ( rate >= 75 ) heatClass = 'heat-high';
+            else if ( rate >= 50 ) heatClass = 'heat-medium';
+
+            return `
+            <div class="heat-cell ${heatClass}" title="${seating.seat_number} - ${seating.seating_type} - ${rate.toFixed( 1 )}%">
+                ${seating.seat_number}
+            </div>
+        `;
+        } ).join( '' );
+
+        heatGrid.innerHTML = heatHtml;
+    }
+
+    // Rapor dışa aktar
+    async function exportReport( format ) {
+        const eventId = document.getElementById( 'event-select' ).value;
+
+        if ( !eventId ) {
+            alert( 'Lütfen bir etkinlik seçiniz' );
+            return;
+        }
+
+        try {
+            const response = await fetch( `/api/reports/export/${format}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify( { event_id: eventId } )
+            } );
+
+            if ( response.ok ) {
+                // Dosyayı indir
+                const blob = await response.blob();
+                const url = window.URL.createObjectURL( blob );
+                const a = document.createElement( 'a' );
+                a.href = url;
+                a.download = `rapor_${eventId}_${new Date().getTime()}.${format}`;
+                document.body.appendChild( a );
+                a.click();
+                window.URL.revokeObjectURL( url );
+                document.body.removeChild( a );
+
+                alert( `${format.toUpperCase()} raporu başarıyla oluşturuldu!` );
+            } else {
+                throw new Error( 'Export işlemi başarısız' );
+            }
+        } catch ( error ) {
+            console.error( 'Export hatası:', error );
+            alert( 'Rapor dışa aktarılırken hata oluştu: ' + error.message );
+        }
+    }
+</script>
+{% endblock %}

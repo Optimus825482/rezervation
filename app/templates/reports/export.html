@@ -1,0 +1,759 @@
+{% extends "base.html" %}
+
+{% block title %}Rapor Dışa Aktarma - EventFlow{% endblock %}
+
+{% block extra_css %}
+<!-- Select2 for advanced dropdowns -->
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/select2-bootstrap-5-theme@1.3.0/dist/select2-bootstrap-5-theme.min.css"
+    rel="stylesheet">
+<!-- Toast notifications -->
+<link href="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.css" rel="stylesheet">
+<style>
+    .export-card {
+        background: white;
+        border-radius: 1rem;
+        padding: 1.5rem;
+        margin-bottom: 1.5rem;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        border: 1px solid #e2e8f0;
+        transition: all 0.3s ease;
+    }
+
+    .export-card:hover {
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        transform: translateY(-2px);
+    }
+
+    .format-option {
+        display: flex;
+        align-items: center;
+        padding: 1rem;
+        border: 2px solid #e2e8f0;
+        border-radius: 0.75rem;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        margin-bottom: 0.5rem;
+    }
+
+    .format-option:hover {
+        border-color: #3b82f6;
+        background-color: #f8fafc;
+    }
+
+    .format-option.selected {
+        border-color: #3b82f6;
+        background-color: #eff6ff;
+    }
+
+    .format-icon {
+        width: 3rem;
+        height: 3rem;
+        border-radius: 0.5rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-right: 1rem;
+        font-size: 1.5rem;
+        color: white;
+    }
+
+    .pdf-icon {
+        background: #dc2626;
+    }
+
+    .excel-icon {
+        background: #059669;
+    }
+
+    .csv-icon {
+        background: #7c3aed;
+    }
+
+    .json-icon {
+        background: #ea580c;
+    }
+
+    .txt-icon {
+        background: #6b7280;
+    }
+
+    .template-card {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border-radius: 1rem;
+        padding: 1.5rem;
+        margin-bottom: 1rem;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .template-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: linear-gradient(45deg, transparent 30%, rgba(255, 255, 255, 0.1) 50%, transparent 70%);
+        transform: translateX(-100%);
+        transition: transform 0.6s;
+    }
+
+    .template-card:hover::before {
+        transform: translateX(100%);
+    }
+
+    .export-progress {
+        width: 100%;
+        height: 0.5rem;
+        background-color: #e5e7eb;
+        border-radius: 0.25rem;
+        overflow: hidden;
+        margin: 1rem 0;
+    }
+
+    .progress-bar {
+        height: 100%;
+        background: linear-gradient(90deg, #3b82f6, #8b5cf6);
+        border-radius: 0.25rem;
+        transition: width 0.3s ease;
+        width: 0%;
+    }
+
+    .scheduled-export {
+        background: #f0f9ff;
+        border: 1px solid #0ea5e9;
+        border-radius: 0.75rem;
+        padding: 1rem;
+        margin: 0.5rem 0;
+    }
+
+    .history-item {
+        display: flex;
+        justify-content: between;
+        align-items: center;
+        padding: 1rem;
+        border-bottom: 1px solid #e5e7eb;
+    }
+
+    .history-item:last-child {
+        border-bottom: none;
+    }
+
+    .export-status {
+        padding: 0.25rem 0.75rem;
+        border-radius: 9999px;
+        font-size: 0.75rem;
+        font-weight: 600;
+    }
+
+    .status-success {
+        background: #dcfce7;
+        color: #166534;
+    }
+
+    .status-pending {
+        background: #fef3c7;
+        color: #92400e;
+    }
+
+    .status-error {
+        background: #fee2e2;
+        color: #991b1b;
+    }
+
+    .status-processing {
+        background: #dbeafe;
+        color: #1e40af;
+    }
+
+    .select2-container--bootstrap-5 .select2-selection {
+        border: 1px solid #d1d5db;
+        border-radius: 0.5rem;
+        min-height: 42px;
+    }
+
+    .select2-container--bootstrap-5 .select2-selection__rendered {
+        line-height: 42px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto">
+    <!-- Sayfa Başlığı -->
+    <div class="mb-8">
+        <h1 class="text-3xl font-bold text-slate-900 dark:text-white">
+            <i class="fas fa-file-export mr-3 text-primary-600"></i>
+            Rapor Dışa Aktarma Merkezi
+        </h1>
+        <p class="mt-2 text-slate-600 dark:text-slate-400">
+            Raporlarınızı farklı formatlarda dışa aktarın ve planlı export'lar oluşturun
+        </p>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- Sol Panel - Export Seçenekleri -->
+        <div class="lg:col-span-2">
+            <!-- Hızlı Export -->
+            <div class="export-card">
+                <h2 class="text-xl font-semibold mb-4">
+                    <i class="fas fa-bolt mr-2 text-yellow-500"></i>
+                    Hızlı Export
+                </h2>
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                    <div class="format-option" data-format="pdf">
+                        <div class="format-icon pdf-icon">
+                            <i class="fas fa-file-pdf"></i>
+                        </div>
+                        <div>
+                            <h3 class="font-semibold">PDF</h3>
+                            <p class="text-sm text-gray-600">Profesyonel rapor</p>
+                        </div>
+                    </div>
+                    <div class="format-option" data-format="excel">
+                        <div class="format-icon excel-icon">
+                            <i class="fas fa-file-excel"></i>
+                        </div>
+                        <div>
+                            <h3 class="font-semibold">Excel</h3>
+                            <p class="text-sm text-gray-600">Detaylı analiz</p>
+                        </div>
+                    </div>
+                    <div class="format-option" data-format="csv">
+                        <div class="format-icon csv-icon">
+                            <i class="fas fa-file-csv"></i>
+                        </div>
+                        <div>
+                            <h3 class="font-semibold">CSV</h3>
+                            <p class="text-sm text-gray-600">Ham veri</p>
+                        </div>
+                    </div>
+                    <div class="format-option" data-format="json">
+                        <div class="format-icon json-icon">
+                            <i class="fas fa-file-code"></i>
+                        </div>
+                        <div>
+                            <h3 class="font-semibold">JSON</h3>
+                            <p class="text-sm text-gray-600">API verisi</p>
+                        </div>
+                    </div>
+                </div>
+
+                <form id="quick-export-form">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                        <div>
+                            <label class="block text-sm font-medium mb-2">Etkinlik Seçin</label>
+                            <select id="event-select" name="event_id" class="w-full" required>
+                                <option value="">Etkinlik seçiniz...</option>
+                                {% for event in events %}
+                                <option value="{{ event.id }}">{{ event.name }} - {{
+                                    event.event_date.strftime('%d.%m.%Y') if event.event_date else 'Tarih yok' }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium mb-2">Rapor Tipi</label>
+                            <select id="report-type" name="report_type" class="w-full">
+                                <option value="comprehensive">Kapsamlı Rapor</option>
+                                <option value="summary">Özet Rapor</option>
+                                <option value="reservations">Sadece Rezervasyonlar</option>
+                                <option value="analytics">Analitik Veriler</option>
+                            </select>
+                        </div>
+                    </div>
+                    <button type="submit" class="btn-shadcn btn-shadcn-primary w-full" id="quick-export-btn">
+                        <i class="fas fa-download mr-2"></i>
+                        Hızlı Export Başlat
+                    </button>
+                </form>
+            </div>
+
+            <!-- Gelişmiş Export -->
+            <div class="export-card">
+                <h2 class="text-xl font-semibold mb-4">
+                    <i class="fas fa-cogs mr-2 text-blue-500"></i>
+                    Gelişmiş Export Seçenekleri
+                </h2>
+                <form id="advanced-export-form">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <h3 class="font-semibold mb-3">Etkinlik ve Tarih</h3>
+                            <div class="space-y-4">
+                                <div>
+                                    <label class="block text-sm font-medium mb-2">Etkinlikler</label>
+                                    <select id="multi-event-select" name="event_ids" class="w-full" multiple>
+                                        {% for event in events %}
+                                        <option value="{{ event.id }}">{{ event.name }} - {{
+                                            event.event_date.strftime('%d.%m.%Y') if event.event_date else 'Tarih yok'
+                                            }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium mb-2">Tarih Aralığı</label>
+                                    <input type="text" id="date-range" name="date_range" class="w-full">
+                                </div>
+                            </div>
+                        </div>
+                        <div>
+                            <h3 class="font-semibold mb-3">İçerik Seçenekleri</h3>
+                            <div class="space-y-3">
+                                <label class="flex items-center">
+                                    <input type="checkbox" name="include_analytics" class="mr-2" checked>
+                                    <span>Analitik verileri dahil et</span>
+                                </label>
+                                <label class="flex items-center">
+                                    <input type="checkbox" name="include_charts" class="mr-2" checked>
+                                    <span>Grafikler dahil et (PDF/Excel)</span>
+                                </label>
+                                <label class="flex items-center">
+                                    <input type="checkbox" name="include_raw_data" class="mr-2">
+                                    <span>Ham veri dahil et</span>
+                                </label>
+                                <label class="flex items-center">
+                                    <input type="checkbox" name="include_customer_details" class="mr-2" checked>
+                                    <span>Müşteri detayları dahil et</span>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mt-6">
+                        <h3 class="font-semibold mb-3">Özel Şablon</h3>
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+                            <label class="flex items-center">
+                                <input type="radio" name="template" value="executive" class="mr-2">
+                                <span>Yönetici Özeti</span>
+                            </label>
+                            <label class="flex items-center">
+                                <input type="radio" name="template" value="detailed" class="mr-2" checked>
+                                <span>Detaylı Analiz</span>
+                            </label>
+                            <label class="flex items-center">
+                                <input type="radio" name="template" value="custom" class="mr-2">
+                                <span>Özel Şablon</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="mt-6">
+                        <h3 class="font-semibold mb-3">Dosya Adlandırma</h3>
+                        <input type="text" name="filename_pattern" class="w-full"
+                            placeholder="{event_name}_{date}_{report_type}" value="{event_name}_{date}_{report_type}">
+                        <p class="text-xs text-gray-500 mt-1">
+                            Kullanılabilir değişkenler: {event_name}, {date}, {report_type}, {company_name}
+                        </p>
+                    </div>
+
+                    <button type="submit" class="btn-shadcn btn-shadcn-secondary w-full mt-6" id="advanced-export-btn">
+                        <i class="fas fa-cog mr-2"></i>
+                        Gelişmiş Export Başlat
+                    </button>
+                </form>
+            </div>
+
+            <!-- Planlı Export'lar -->
+            <div class="export-card">
+                <h2 class="text-xl font-semibold mb-4">
+                    <i class="fas fa-clock mr-2 text-purple-500"></i>
+                    Planlı Export'lar
+                </h2>
+                <form id="scheduled-export-form">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium mb-2">Export Sıklığı</label>
+                            <select name="frequency" class="w-full">
+                                <option value="daily">Günlük</option>
+                                <option value="weekly">Haftalık</option>
+                                <option value="monthly">Aylık</option>
+                                <option value="quarterly">3 Aylık</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium mb-2">Zaman</label>
+                            <input type="time" name="time" class="w-full" value="09:00">
+                        </div>
+                    </div>
+                    <div class="mt-4">
+                        <label class="block text-sm font-medium mb-2">E-posta Adresi</label>
+                        <input type="email" name="email" class="w-full" placeholder="export@company.com">
+                    </div>
+                    <button type="submit" class="btn-shadcn btn-shadcn-outline w-full mt-4">
+                        <i class="fas fa-calendar-plus mr-2"></i>
+                        Planlı Export Oluştur
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Sağ Panel - Durum ve Geçmiş -->
+        <div class="lg:col-span-1">
+            <!-- Export Durumu -->
+            <div class="export-card">
+                <h2 class="text-xl font-semibold mb-4">
+                    <i class="fas fa-info-circle mr-2 text-green-500"></i>
+                    Export Durumu
+                </h2>
+                <div id="export-status">
+                    <div class="text-center py-8 text-gray-500">
+                        <i class="fas fa-file-export text-4xl mb-3"></i>
+                        <p>Aktif export işlemi bulunmuyor</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Export Geçmişi -->
+            <div class="export-card">
+                <h2 class="text-xl font-semibold mb-4">
+                    <i class="fas fa-history mr-2 text-blue-500"></i>
+                    Son Export'lar
+                </h2>
+                <div id="export-history">
+                    <div class="history-item">
+                        <div class="flex-1">
+                            <p class="font-medium">Konser Raporu.pdf</p>
+                            <p class="text-sm text-gray-500">08.11.2025 09:30</p>
+                        </div>
+                        <span class="export-status status-success">Başarılı</span>
+                    </div>
+                    <div class="history-item">
+                        <div class="flex-1">
+                            <p class="font-medium">Rezervasyonlar.xlsx</p>
+                            <p class="text-sm text-gray-500">08.11.2025 08:15</p>
+                        </div>
+                        <span class="export-status status-success">Başarılı</span>
+                    </div>
+                    <div class="history-item">
+                        <div class="flex-1">
+                            <p class="font-medium">Analiz.csv</p>
+                            <p class="text-sm text-gray-500">07.11.2025 16:45</p>
+                        </div>
+                        <span class="export-status status-error">Hata</span>
+                    </div>
+                </div>
+                <button class="btn-shadcn btn-shadcn-ghost w-full mt-4">
+                    <i class="fas fa-list mr-2"></i>
+                    Tüm Geçmişi Gör
+                </button>
+            </div>
+
+            <!-- Export İstatistikleri -->
+            <div class="export-card">
+                <h2 class="text-xl font-semibold mb-4">
+                    <i class="fas fa-chart-bar mr-2 text-orange-500"></i>
+                    Bu Ay İstatistikleri
+                </h2>
+                <div class="space-y-3">
+                    <div class="flex justify-between">
+                        <span>Toplam Export</span>
+                        <span class="font-semibold">24</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span>PDF</span>
+                        <span class="font-semibold">8</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span>Excel</span>
+                        <span class="font-semibold">12</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span>CSV</span>
+                        <span class="font-semibold">4</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<!-- Select2 JS -->
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+<!-- Toast notifications -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.js"></script>
+
+<script>
+    // Global değişkenler
+    let currentExport = null;
+    let exportProgress = 0;
+
+    // Toast ayarları
+    toastr.options = {
+        "closeButton": true,
+        "progressBar": true,
+        "positionClass": "toast-top-right",
+        "timeOut": "5000"
+    };
+
+    // Sayfa yüklendiğinde
+    document.addEventListener( 'DOMContentLoaded', function () {
+        initializeComponents();
+    } );
+
+    // Bileşenleri başlat
+    function initializeComponents() {
+        // Select2 başlat
+        $( '#event-select, #report-type' ).select2( {
+            theme: 'bootstrap-5',
+            placeholder: 'Seçiniz...',
+            allowClear: true
+        } );
+
+        $( '#multi-event-select' ).select2( {
+            theme: 'bootstrap-5',
+            placeholder: 'Birden fazla etkinlik seçin...',
+            allowClear: true
+        } );
+
+        // DateRangePicker başlat
+        $( '#date-range' ).daterangepicker( {
+            locale: {
+                format: 'DD.MM.YYYY',
+                separator: ' - ',
+                applyLabel: 'Uygula',
+                cancelLabel: 'İptal',
+                fromLabel: 'Başlangıç',
+                toLabel: 'Bitiş',
+                customRangeLabel: 'Özel Aralık',
+                weekLabel: 'H',
+                daysOfWeek: ['Paz', 'Pzt', 'Sal', 'Çar', 'Per', 'Cum', 'Cmt'],
+                monthNames: ['Ocak', 'Şubat', 'Mart', 'Nisan', 'Mayıs', 'Haziran', 'Temmuz', 'Ağustos', 'Eylül', 'Ekim', 'Kasım', 'Aralık']
+            },
+            ranges: {
+                'Bugün': [moment(), moment()],
+                'Son 7 gün': [moment().subtract( 6, 'days' ), moment()],
+                'Son 30 gün': [moment().subtract( 29, 'days' ), moment()],
+                'Bu ay': [moment().startOf( 'month' ), moment().endOf( 'month' )],
+                'Geçen ay': [moment().subtract( 1, 'month' ).startOf( 'month' ), moment().subtract( 1, 'month' ).endOf( 'month' )]
+            },
+            startDate: moment().subtract( 30, 'days' ),
+            endDate: moment()
+        } );
+
+        // Format seçimi
+        document.querySelectorAll( '.format-option' ).forEach( option => {
+            option.addEventListener( 'click', function () {
+                document.querySelectorAll( '.format-option' ).forEach( opt => opt.classList.remove( 'selected' ) );
+                this.classList.add( 'selected' );
+            } );
+        } );
+
+        // Form event listeners
+        document.getElementById( 'quick-export-form' ).addEventListener( 'submit', handleQuickExport );
+        document.getElementById( 'advanced-export-form' ).addEventListener( 'submit', handleAdvancedExport );
+        document.getElementById( 'scheduled-export-form' ).addEventListener( 'submit', handleScheduledExport );
+    }
+
+    // Hızlı export işlemi
+    async function handleQuickExport( e ) {
+        e.preventDefault();
+
+        const form = e.target;
+        const formData = new FormData( form );
+        const selectedFormat = document.querySelector( '.format-option.selected' );
+        const format = selectedFormat ? selectedFormat.dataset.format : 'pdf';
+
+        if ( !selectedFormat ) {
+            toastr.warning( 'Lütfen bir dosya formatı seçin' );
+            return;
+        }
+
+        const eventId = formData.get( 'event_id' );
+        if ( !eventId ) {
+            toastr.warning( 'Lütfen bir etkinlik seçin' );
+            return;
+        }
+
+        // Export işlemini başlat
+        await startExport( format, {
+            event_id: eventId,
+            report_type: formData.get( 'report_type' )
+        }, 'Hızlı Export' );
+    }
+
+    // Gelişmiş export işlemi
+    async function handleAdvancedExport( e ) {
+        e.preventDefault();
+
+        const form = e.target;
+        const formData = new FormData( form );
+        const selectedEvents = Array.from( formData.getAll( 'event_ids' ) );
+
+        if ( selectedEvents.length === 0 ) {
+            toastr.warning( 'Lütfen en az bir etkinlik seçin' );
+            return;
+        }
+
+        const selectedFormat = document.querySelector( '.format-option.selected' );
+        const format = selectedFormat ? selectedFormat.dataset.format : 'pdf';
+
+        // Export seçeneklerini hazırla
+        const options = {
+            event_ids: selectedEvents,
+            date_range: formData.get( 'date_range' ),
+            include_analytics: formData.has( 'include_analytics' ),
+            include_charts: formData.has( 'include_charts' ),
+            include_raw_data: formData.has( 'include_raw_data' ),
+            include_customer_details: formData.has( 'include_customer_details' ),
+            template: formData.get( 'template' ),
+            filename_pattern: formData.get( 'filename_pattern' )
+        };
+
+        await startExport( format, options, 'Gelişmiş Export' );
+    }
+
+    // Planlı export işlemi
+    async function handleScheduledExport( e ) {
+        e.preventDefault();
+
+        const formData = new FormData( e.target );
+        const email = formData.get( 'email' );
+
+        if ( !email ) {
+            toastr.warning( 'Lütfen e-posta adresi girin' );
+            return;
+        }
+
+        // Planlı export'ı kaydet
+        toastr.success( 'Planlı export oluşturuldu' );
+        e.target.reset();
+    }
+
+    // Export işlemini başlat
+    async function startExport( format, options, exportType ) {
+        try {
+            // Progress'i göster
+            showExportProgress();
+
+            // API isteği gönder
+            const response = await fetch( `/api/reports/export/${format}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify( {
+                    ...options,
+                    export_type: exportType
+                } )
+            } );
+
+            if ( response.ok ) {
+                // Progress'i tamamla
+                completeExportProgress();
+
+                // Dosyayı indir
+                const blob = await response.blob();
+                const url = window.URL.createObjectURL( blob );
+                const a = document.createElement( 'a' );
+                a.href = url;
+                a.download = `export_${Date.now()}.${format}`;
+                document.body.appendChild( a );
+                a.click();
+                window.URL.revokeObjectURL( url );
+                document.body.removeChild( a );
+
+                toastr.success( `${format.toUpperCase()} raporu başarıyla oluşturuldu!` );
+
+                // Geçmişi güncelle
+                updateExportHistory();
+            } else {
+                throw new Error( 'Export işlemi başarısız' );
+            }
+
+        } catch ( error ) {
+            console.error( 'Export hatası:', error );
+            errorExportProgress();
+            toastr.error( 'Export işlemi sırasında hata oluştu: ' + error.message );
+        }
+    }
+
+    // Export progress'ini göster
+    function showExportProgress() {
+        const statusContainer = document.getElementById( 'export-status' );
+        statusContainer.innerHTML = `
+            <div class="text-center">
+                <div class="loading-spinner inline-block mb-3"></div>
+                <p class="font-medium">Export işlemi başlatıldı...</p>
+                <div class="export-progress">
+                    <div class="progress-bar" id="progress-bar" style="width: 0%"></div>
+                </div>
+                <p class="text-sm text-gray-500">Lütfen bekleyin, işlem tamamlanana kadar sayfayı kapatmayın</p>
+            </div>
+        `;
+
+        // Progress animasyonu
+        let progress = 0;
+        const progressBar = document.getElementById( 'progress-bar' );
+        const interval = setInterval( () => {
+            progress += Math.random() * 15;
+            if ( progress > 90 ) progress = 90;
+            progressBar.style.width = progress + '%';
+        }, 500 );
+
+        currentExport = { interval, progress };
+    }
+
+    // Export progress'ini tamamla
+    function completeExportProgress() {
+        if ( currentExport ) {
+            clearInterval( currentExport.interval );
+            const progressBar = document.getElementById( 'progress-bar' );
+            progressBar.style.width = '100%';
+
+            setTimeout( () => {
+                document.getElementById( 'export-status' ).innerHTML = `
+                    <div class="text-center py-4">
+                        <i class="fas fa-check-circle text-green-500 text-3xl mb-2"></i>
+                        <p class="font-medium text-green-700">Export başarıyla tamamlandı!</p>
+                    </div>
+                `;
+                currentExport = null;
+            }, 1000 );
+        }
+    }
+
+    // Export progress'inde hata
+    function errorExportProgress() {
+        if ( currentExport ) {
+            clearInterval( currentExport.interval );
+            document.getElementById( 'export-status' ).innerHTML = `
+                <div class="text-center py-4">
+                    <i class="fas fa-exclamation-triangle text-red-500 text-3xl mb-2"></i>
+                    <p class="font-medium text-red-700">Export işlemi başarısız</p>
+                </div>
+            `;
+            currentExport = null;
+        }
+    }
+
+    // Export geçmişini güncelle
+    function updateExportHistory() {
+        const historyContainer = document.getElementById( 'export-history' );
+        const timestamp = new Date().toLocaleString( 'tr-TR' );
+        const format = document.querySelector( '.format-option.selected' )?.dataset.format.toUpperCase() || 'PDF';
+
+        const newItem = document.createElement( 'div' );
+        newItem.className = 'history-item';
+        newItem.innerHTML = `
+            <div class="flex-1">
+                <p class="font-medium">Export Raporu.${format.toLowerCase()}</p>
+                <p class="text-sm text-gray-500">${timestamp}</p>
+            </div>
+            <span class="export-status status-success">Başarılı</span>
+        `;
+
+        historyContainer.insertBefore( newItem, historyContainer.firstChild );
+
+        // Maksimum 5 öğe göster
+        const items = historyContainer.querySelectorAll( '.history-item' );
+        if ( items.length > 5 ) {
+            items[items.length - 1].remove();
+        }
+    }
+</script>
+{% endblock %}

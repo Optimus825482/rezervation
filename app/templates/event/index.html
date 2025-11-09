@@ -1,0 +1,321 @@
+{% extends "base.html" %}
+{% block title %}Etkinlik Yönetimi{% endblock %}
+
+{% block content %}
+{% set metrics = namespace(total=events|length, active=0, draft=0, capacity=0) %}
+{% for item in events %}
+{% set status_value = item.status.value if item.status is not string else item.status %}
+{% set status_lower = status_value|lower if status_value else 'belirsiz' %}
+{% if status_lower == 'active' %}
+{% set metrics.active = metrics.active + 1 %}
+{% elif status_lower in ['draft', 'pending', 'planned'] %}
+{% set metrics.draft = metrics.draft + 1 %}
+{% endif %}
+{% set metrics.capacity = metrics.capacity + (item.total_capacity|default(0)|int) %}
+{% endfor %}
+{% set events_with_date = events|selectattr('event_date')|list %}
+{% set sorted_events = events_with_date|sort(attribute='event_date') %}
+{% set next_event = sorted_events[0] if sorted_events|length > 0 else None %}
+
+<div class="space-y-6">
+    <div class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+        <div>
+            <p class="text-xs uppercase tracking-[0.3em] text-slate-400 dark:text-slate-600">Yönetim Paneli</p>
+            <h1 class="text-3xl font-bold text-slate-900 dark:text-white">Etkinlik Yönetimi</h1>
+            <p class="mt-1 text-slate-600 dark:text-slate-400">Planlanan ve devam eden tüm etkinlikleri tek panelden
+                takip et.</p>
+        </div>
+        <div class="flex flex-wrap items-center gap-3">
+            <a href="{{ url_for('event.create') }}" class="btn-shadcn btn-shadcn-default">
+                <i class="fas fa-plus"></i>
+                <span>Yeni Etkinlik Oluştur</span>
+            </a>
+            <a href="{{ url_for('template.seating_templates') }}" class="btn-shadcn btn-shadcn-outline">
+                <i class="fas fa-layer-group"></i>
+                <span>Şablonlar</span>
+            </a>
+        </div>
+    </div>
+
+    <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <div class="card-shadcn p-5 shadow-sm">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-xs font-semibold uppercase tracking-wide text-slate-400">Toplam Etkinlik</p>
+                    <p class="mt-2 text-3xl font-semibold text-slate-900 dark:text-white">{{ metrics.total }}</p>
+                </div>
+                <span class="inline-flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 text-primary">
+                    <i class="fas fa-calendar-alt"></i>
+                </span>
+            </div>
+            <p class="mt-3 text-xs text-slate-500">Tüm etkinlik kayıtları</p>
+        </div>
+
+        <div class="card-shadcn p-5 shadow-sm">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-xs font-semibold uppercase tracking-wide text-slate-400">Aktif Etkinlik</p>
+                    <p class="mt-2 text-3xl font-semibold text-green-600 dark:text-green-400">{{ metrics.active }}</p>
+                </div>
+                <span
+                    class="inline-flex h-12 w-12 items-center justify-center rounded-full bg-green-500/10 text-green-500">
+                    <i class="fas fa-check-circle"></i>
+                </span>
+            </div>
+            <p class="mt-3 text-xs text-slate-500">Şu anda yayında olan etkinlikler</p>
+        </div>
+
+        <div class="card-shadcn p-5 shadow-sm">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-xs font-semibold uppercase tracking-wide text-slate-400">Taslak &amp; Planlanan</p>
+                    <p class="mt-2 text-3xl font-semibold text-amber-600 dark:text-amber-400">{{ metrics.draft }}</p>
+                </div>
+                <span
+                    class="inline-flex h-12 w-12 items-center justify-center rounded-full bg-amber-500/10 text-amber-500">
+                    <i class="fas fa-hourglass-half"></i>
+                </span>
+            </div>
+            <p class="mt-3 text-xs text-slate-500">Yayın öncesi hazırlık aşamasındaki etkinlikler</p>
+        </div>
+
+        <div class="card-shadcn p-5 shadow-sm">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-xs font-semibold uppercase tracking-wide text-slate-400">Toplam Kapasite</p>
+                    <p class="mt-2 text-3xl font-semibold text-slate-900 dark:text-white">{{ metrics.capacity }}</p>
+                </div>
+                <span
+                    class="inline-flex h-12 w-12 items-center justify-center rounded-full bg-blue-500/10 text-blue-500">
+                    <i class="fas fa-users"></i>
+                </span>
+            </div>
+            <p class="mt-3 text-xs text-slate-500">Rezervasyon planlaması için toplam koltuk sayısı</p>
+        </div>
+    </div>
+
+    {% if next_event %}
+    {% set next_status = next_event.status.value if next_event.status is not string else next_event.status %}
+    <div class="grid gap-6 lg:grid-cols-2">
+        <div class="card-shadcn">
+            <div class="card-shadcn-header pb-4">
+                <p class="text-xs font-semibold uppercase tracking-wide text-slate-400">Yaklaşan Etkinlik</p>
+                <h2 class="card-shadcn-title text-2xl">{{ next_event.name|safe_text }}</h2>
+                <p class="card-shadcn-description">Planlanan en yakın tarihli etkinliğin özet bilgileri</p>
+            </div>
+            <div class="card-shadcn-content">
+                <dl class="grid gap-4 sm:grid-cols-2">
+                    <div>
+                        <dt class="text-xs uppercase tracking-wide text-slate-400">Etkinlik Tarihi</dt>
+                        <dd class="mt-2 text-sm font-medium text-slate-900 dark:text-white">{{
+                            next_event.event_date.strftime('%d.%m.%Y') if next_event.event_date else 'Belirlenmedi' }}
+                        </dd>
+                    </div>
+                    <div>
+                        <dt class="text-xs uppercase tracking-wide text-slate-400">Durum</dt>
+                        <dd class="mt-2">
+                            {% set normalized = next_status|lower if next_status else 'belirsiz' %}
+                            {% if normalized == 'active' %}
+                            <span class="badge-shadcn badge-shadcn-default">Aktif</span>
+                            {% elif normalized in ['draft', 'planned', 'pending'] %}
+                            <span class="badge-shadcn badge-shadcn-outline">Taslak</span>
+                            {% else %}
+                            <span class="badge-shadcn badge-shadcn-secondary">{{ next_status|default('Belirsiz')|title
+                                }}</span>
+                            {% endif %}
+                        </dd>
+                    </div>
+                    <div>
+                        <dt class="text-xs uppercase tracking-wide text-slate-400">Mekan</dt>
+                        <dd class="mt-2 text-sm font-medium text-slate-900 dark:text-white">{{
+                            next_event.venue_name|default('Bilgi yok')|safe_text }}</dd>
+                    </div>
+                    <div>
+                        <dt class="text-xs uppercase tracking-wide text-slate-400">Toplam Kapasite</dt>
+                        <dd class="mt-2 text-sm font-medium text-slate-900 dark:text-white">{{
+                            next_event.total_capacity|default('Belirlenmedi') }}</dd>
+                    </div>
+                </dl>
+            </div>
+            <div class="card-shadcn-footer pt-4">
+                <div class="flex flex-wrap gap-3">
+                    <a href="{{ url_for('event.edit', event_id=next_event.id) }}" class="btn-shadcn btn-shadcn-default">
+                        <i class="fas fa-pen"></i>
+                        Düzenlemeye Git
+                    </a>
+                    <a href="{{ url_for('reservation.index') }}" class="btn-shadcn btn-shadcn-outline">
+                        <i class="fas fa-ticket-alt"></i>
+                        Rezervasyonları Aç
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <div class="card-shadcn bg-gradient-to-br from-primary/5 to-orange-500/5">
+            <div class="card-shadcn-header pb-4">
+                <p class="text-xs font-semibold uppercase tracking-wide text-primary">Hızlı İşlemler</p>
+                <h3 class="card-shadcn-title text-xl">Panel Kısayolları</h3>
+                <p class="card-shadcn-description">En sık kullandığın aksiyonlara tek dokunuşla eriş.</p>
+            </div>
+            <div class="card-shadcn-content">
+                <ul class="space-y-3 text-sm text-slate-600 dark:text-slate-300">
+                    <li
+                        class="flex items-center justify-between rounded-xl border border-slate-200/80 px-4 py-3 transition hover:border-primary hover:bg-white dark:border-slate-700 dark:hover:bg-slate-900/60">
+                        <span class="flex items-center gap-2 font-medium"><i class="fas fa-copy text-primary"></i>
+                            Etkinlik şablonu kopyala</span>
+                        <a href="{{ url_for('template.seating_templates') }}"
+                            class="btn-shadcn btn-shadcn-ghost btn-shadcn-sm">
+                            <i class="fas fa-arrow-right"></i>
+                        </a>
+                    </li>
+                    <li
+                        class="flex items-center justify-between rounded-xl border border-slate-200/80 px-4 py-3 transition hover:border-primary hover:bg-white dark:border-slate-700 dark:hover:bg-slate-900/60">
+                        <span class="flex items-center gap-2 font-medium"><i class="fas fa-chart-line text-primary"></i>
+                            Raporları incele</span>
+                        <a href="{{ url_for('report.index') }}" class="btn-shadcn btn-shadcn-ghost btn-shadcn-sm">
+                            <i class="fas fa-arrow-right"></i>
+                        </a>
+                    </li>
+                    <li
+                        class="flex items-center justify-between rounded-xl border border-slate-200/80 px-4 py-3 transition hover:border-primary hover:bg-white dark:border-slate-700 dark:hover:bg-slate-900/60">
+                        <span class="flex items-center gap-2 font-medium"><i class="fas fa-qrcode text-primary"></i> QR
+                            kontrolüne geç</span>
+                        <a href="{{ url_for('checkin.index') }}" class="btn-shadcn btn-shadcn-ghost btn-shadcn-sm">
+                            <i class="fas fa-arrow-right"></i>
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    {% if events %}
+    <div class="grid gap-6 sm:grid-cols-2 xl:grid-cols-3">
+        {% for event in events %}
+        {% set status_value = event.status.value if event.status is not string else event.status %}
+        {% set status_lower = status_value|lower if status_value else 'belirsiz' %}
+        <article class="card-shadcn group relative overflow-hidden">
+            <div
+                class="absolute inset-0 bg-gradient-to-br from-primary/10 via-transparent to-transparent opacity-0 transition group-hover:opacity-100">
+            </div>
+            <div class="relative space-y-4 p-6">
+                <div class="flex items-start justify-between gap-4">
+                    <div class="space-y-2">
+                        <h3
+                            class="text-lg font-semibold text-slate-900 transition group-hover:text-primary dark:text-white">
+                            {{ event.name|safe_text }}</h3>
+                        <div class="flex flex-wrap items-center gap-3 text-sm text-slate-500 dark:text-slate-400">
+                            {% if event.event_date %}
+                            <span class="inline-flex items-center gap-1">
+                                <i class="far fa-calendar"></i>
+                                {{ event.event_date.strftime('%d.%m.%Y') if event.event_date else 'Tarih yok' }}
+                            </span>
+                            {% endif %}
+                            {% if event.start_time %}
+                            <span class="inline-flex items-center gap-1">
+                                <i class="far fa-clock"></i>
+                                {{ event.start_time.strftime('%H:%M') if event.start_time else 'Saat yok' }}
+                            </span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% if status_lower == 'active' %}
+                    <span class="badge-shadcn badge-shadcn-default"><i class="fas fa-bullhorn"></i> Aktif</span>
+                    {% elif status_lower in ['draft', 'planned', 'pending'] %}
+                    <span class="badge-shadcn badge-shadcn-outline"><i class="fas fa-hourglass"></i> Taslak</span>
+                    {% else %}
+                    <span class="badge-shadcn badge-shadcn-secondary"><i class="fas fa-circle"></i> {{
+                        status_value|default('Belirsiz')|title }}</span>
+                    {% endif %}
+                </div>
+
+                <dl class="grid gap-4 text-sm text-slate-600 dark:text-slate-300">
+                    <div class="flex items-center gap-3">
+                        <span
+                            class="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-blue-500/10 text-blue-500">
+                            <i class="fas fa-map-marker-alt"></i>
+                        </span>
+                        <div>
+                            <dt class="text-xs uppercase tracking-wide text-slate-400">Mekan</dt>
+                            <dd class="font-medium text-slate-900 dark:text-white">{{
+                                event.venue_name|default('Belirlenmedi')|safe_text }}</dd>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <span
+                            class="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-slate-900/10 text-slate-600 dark:bg-slate-100/10 dark:text-slate-300">
+                            <i class="fas fa-users"></i>
+                        </span>
+                        <div>
+                            <dt class="text-xs uppercase tracking-wide text-slate-400">Toplam Kapasite</dt>
+                            <dd class="font-medium text-slate-900 dark:text-white">{{
+                                event.total_capacity|default('Belirsiz') }}</dd>
+                        </div>
+                    </div>
+                    {% if event.description %}
+                    <div
+                        class="rounded-xl border border-dashed border-slate-200 bg-slate-50/60 p-3 text-xs leading-relaxed text-slate-500 dark:border-slate-800 dark:bg-slate-900/60 dark:text-slate-400">
+                        {{ event.description|truncate(140)|safe_text }}
+                    </div>
+                    {% endif %}
+                </dl>
+
+                <div class="flex flex-wrap items-center justify-between gap-3">
+                    <p class="text-xs text-slate-400">Oluşturma: {{ event.created_at.strftime('%d.%m.%Y') if
+                        event.created_at else 'Belirsiz' }}</p>
+                    <div class="flex flex-wrap gap-2">
+                        <a href="{{ url_for('event.edit', event_id=event.id) }}"
+                            class="btn-shadcn btn-shadcn-outline btn-shadcn-sm">
+                            <i class="fas fa-pen"></i>
+                            <span>Düzenle</span>
+                        </a>
+                        
+                        <!-- Hızlı İptal Butonu (sadece aktif etkinlikler için) -->
+                        {% if status_lower == 'active' %}
+                        <form method="POST" action="{{ url_for('event.cancel', event_id=event.id) }}" class="inline">
+                            <button type="submit"
+                                    onclick="return confirm('Bu etkinliği iptal etmek istediğinizden emin misiniz?')"
+                                    class="btn-shadcn btn-shadcn-ghost btn-shadcn-sm text-amber-600 hover:text-amber-700 hover:bg-amber-50 dark:text-amber-400 dark:hover:bg-amber-900/20"
+                                    title="Etkinliği İptal Et">
+                                <i class="fas fa-ban"></i>
+                                <span class="sr-only">İptal Et</span>
+                            </button>
+                        </form>
+                        {% endif %}
+                        
+                        <a href="{{ url_for('reservation.index') }}" class="btn-shadcn btn-shadcn-ghost btn-shadcn-sm">
+                            <i class="fas fa-list"></i>
+                            <span>Rezervasyonlar</span>
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <a href="{{ url_for('event.edit', event_id=event.id) }}" class="absolute inset-0"
+                aria-label="Etkinliği düzenle"></a>
+        </article>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="card-shadcn text-center py-16">
+        <div
+            class="mx-auto mb-4 flex h-24 w-24 items-center justify-center rounded-full border border-dashed border-slate-300/80 bg-slate-50 dark:border-slate-700 dark:bg-slate-900/50">
+            <i class="fas fa-calendar-alt text-3xl text-slate-400"></i>
+        </div>
+        <h3 class="text-xl font-semibold text-slate-900 dark:text-white">Henüz etkinlik yok</h3>
+        <p class="mt-2 text-sm text-slate-500 dark:text-slate-400">Planlamaya başlamak için ilk etkinliğini oluştur.</p>
+        <div class="mt-6 flex flex-wrap justify-center gap-3">
+            <a href="{{ url_for('event.create') }}" class="btn-shadcn btn-shadcn-default">
+                <i class="fas fa-plus"></i>
+                <span>Yeni Etkinlik Oluştur</span>
+            </a>
+            <a href="{{ url_for('template.seating_templates') }}" class="btn-shadcn btn-shadcn-outline">
+                <i class="fas fa-wand-magic-sparkles"></i>
+                <span>Şablonlara göz at</span>
+            </a>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

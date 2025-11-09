@@ -1,0 +1,367 @@
+{% extends "base.html" %}
+{% block title %}Koltuk Düzeni Şablonları{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <div class="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+        <div class="space-y-1">
+            <p class="text-xs uppercase tracking-[0.3em] text-slate-400 dark:text-slate-600">Şablon yönetimi</p>
+            <h1 class="text-3xl font-bold text-slate-900 dark:text-white">Koltuk Düzeni Şablonları</h1>
+            <p class="text-sm text-slate-600 dark:text-slate-400">Mekanlarına uygun koltuk planlarını tek tıkla tekrar
+                kullan.</p>
+        </div>
+        <div class="flex flex-wrap gap-2">
+            <button type="button" class="btn-shadcn btn-shadcn-default btn-shadcn-sm" data-toggle-create>
+                <i class="fas fa-plus"></i>
+                <span>Yeni Şablon</span>
+            </button>
+            <a href="{{ url_for('template.event_templates') }}" class="btn-shadcn btn-shadcn-outline btn-shadcn-sm">
+                <i class="fas fa-layer-group"></i>
+                <span>Etkinlik Şablonları</span>
+            </a>
+            <a href="{{ url_for('event.index') }}" class="btn-shadcn btn-shadcn-ghost btn-shadcn-sm">
+                <i class="fas fa-calendar"></i>
+                <span>Etkinlikler</span>
+            </a>
+        </div>
+    </div>
+
+    <section class="card-shadcn bg-gradient-to-r from-indigo-500/10 via-transparent to-primary/10">
+        <div class="card-shadcn-content flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+            <div class="space-y-1">
+                <p class="text-xs uppercase tracking-[0.25em] text-indigo-600 dark:text-indigo-300">Toplam şablon</p>
+                <p class="text-3xl font-bold text-slate-900 dark:text-white">{{ templates|length }}</p>
+            </div>
+            <div class="flex items-center gap-3 text-sm text-slate-600 dark:text-slate-300">
+                <i class="fas fa-chair text-indigo-500"></i>
+                <span>Şablonları kategorilere ayırarak farklı mekanlar için hızlıca aksiyon al.</span>
+            </div>
+        </div>
+    </section>
+
+    <section class="card-shadcn{% if templates %} hidden{% endif %}" data-create-card>
+        <div class="card-shadcn-header pb-4">
+            <div class="flex items-center gap-3">
+                <span class="inline-flex h-11 w-11 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                    <i class="fas fa-layer-group"></i>
+                </span>
+                <div>
+                    <h2 class="card-shadcn-title text-lg">Yeni Şablon Oluştur</h2>
+                    <p class="card-shadcn-description">Koltuk düzeni konfigürasyonlarını future-proof hale getir.</p>
+                </div>
+            </div>
+        </div>
+        <form method="POST" action="{{ url_for('template.create_seating_template') }}"
+            class="card-shadcn-content space-y-5">
+            <label class="space-y-2">
+                <span class="label-shadcn">Şablon Adı</span>
+                <input type="text" name="name" class="input-shadcn" placeholder="Örn. Düğün Salonu Standart" required
+                    data-auto-focus>
+            </label>
+
+            <div class="grid gap-4 md:grid-cols-2">
+                <label class="space-y-2">
+                    <span class="label-shadcn">Kategori</span>
+                    <select name="category" class="input-shadcn" required>
+                        <option value="">Seç</option>
+                        <option value="wedding">Düğün</option>
+                        <option value="conference">Konferans</option>
+                        <option value="concert">Konser</option>
+                        <option value="theater">Tiyatro</option>
+                        <option value="restaurant">Restoran</option>
+                        <option value="other">Diğer</option>
+                    </select>
+                </label>
+
+                <label class="space-y-2">
+                    <span class="label-shadcn">Sahne Konumu</span>
+                    <select name="stage_position" class="input-shadcn">
+                        <option value="">Seç</option>
+                        <option value="top">Üst</option>
+                        <option value="bottom">Alt</option>
+                        <option value="left">Sol</option>
+                        <option value="right">Sağ</option>
+                    </select>
+                </label>
+            </div>
+
+            <label class="space-y-2">
+                <span class="label-shadcn">Konfigürasyon (JSON)</span>
+                <textarea name="configuration" rows="5" class="textarea-shadcn"
+                    placeholder='{"tables": [], "stage": {}}'></textarea>
+                <span class="text-xs text-slate-500 dark:text-slate-400">JSON formatında koltuk düzeni konfigürasyonu.
+                    Boş bırakıldığında varsayılan değerler kullanılır.</span>
+            </label>
+
+            <div class="flex flex-col gap-3 sm:flex-row sm:justify-end">
+                <button type="button" class="btn-shadcn btn-shadcn-outline sm:w-auto" data-toggle-create>
+                    <i class="fas fa-times"></i>
+                    <span>İptal</span>
+                </button>
+                <button type="submit" class="btn-shadcn btn-shadcn-default sm:w-auto">
+                    <i class="fas fa-save"></i>
+                    <span>Kaydet</span>
+                </button>
+            </div>
+        </form>
+    </section>
+
+    <div class="grid gap-6 xl:grid-cols-[2fr,1fr]">
+        <section class="card-shadcn">
+            <div class="card-shadcn-header pb-4">
+                <div class="flex items-center gap-3">
+                    <span
+                        class="inline-flex h-11 w-11 items-center justify-center rounded-xl bg-slate-900/10 text-slate-900 dark:bg-slate-100/10 dark:text-slate-100">
+                        <i class="fas fa-table"></i>
+                    </span>
+                    <div>
+                        <h2 class="card-shadcn-title text-lg">Mevcut Şablonlar</h2>
+                        <p class="card-shadcn-description">Koltuk yerleşimlerini düzenle, arşivle veya paylaş.</p>
+                    </div>
+                </div>
+            </div>
+            <div class="card-shadcn-content">
+                {% if templates %}
+                <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+                    {% for template in templates %}
+                    <article
+                        class="rounded-2xl border border-slate-200 bg-slate-50 p-5 shadow-sm transition hover:-translate-y-1 hover:shadow-lg dark:border-slate-800 dark:bg-slate-900/40">
+                        <header class="flex items-center gap-3">
+                            <span
+                                class="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                                <i class="fas fa-layer-group"></i>
+                            </span>
+                            <div>
+                                <h3 class="text-base font-semibold text-slate-900 dark:text-white">{{ template.name }}
+                                </h3>
+                                <p class="text-xs uppercase tracking-[0.25em] text-slate-400">{{ template.category or
+                                    'Kategori yok' }}</p>
+                            </div>
+                        </header>
+                        <dl class="mt-4 space-y-2 text-sm text-slate-600 dark:text-slate-300">
+                            <div class="flex items-center gap-2">
+                                <i class="fas fa-map-marker-alt text-primary"></i>
+                                <span>Sahne: {{ template.stage_position.value if template.stage_position else
+                                    'Belirtilmemiş' }}</span>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <i class="fas fa-clock text-primary"></i>
+                                <span>Oluşturma: {{ template.created_at.strftime('%d.%m.%Y') }}</span>
+                            </div>
+                        </dl>
+                        <footer class="mt-5 flex flex-wrap gap-2">
+                            <button type="button" class="btn-shadcn btn-shadcn-ghost btn-shadcn-sm"
+                                data-template-view="{{ template.id }}">
+                                <i class="fas fa-eye"></i>
+                                <span>Görüntüle</span>
+                            </button>
+                            <button type="button" class="btn-shadcn btn-shadcn-outline btn-shadcn-sm"
+                                data-template-edit="{{ template.id }}">
+                                <i class="fas fa-edit"></i>
+                                <span>Düzenle</span>
+                            </button>
+                            <form method="POST"
+                                action="{{ url_for('template.delete_seating_template', template_id=template.id) }}"
+                                class="inline-flex" data-template-delete>
+                                <button type="submit" class="btn-shadcn btn-shadcn-destructive btn-shadcn-sm">
+                                    <i class="fas fa-trash"></i>
+                                    <span>Sil</span>
+                                </button>
+                            </form>
+                        </footer>
+                    </article>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="alert-shadcn alert-shadcn-default">
+                    <div class="flex items-start gap-3">
+                        <i class="fas fa-info-circle text-primary"></i>
+                        <div>
+                            <p class="text-sm text-slate-600 dark:text-slate-300">Henüz koltuk düzeni şablonu
+                                oluşturulmadı.</p>
+                            <p class="text-xs text-slate-500 dark:text-slate-400">Yeni bir kayıt eklemek için "Yeni
+                                Şablon" butonuna tıkla.</p>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </section>
+
+        <section
+            class="card-shadcn border border-dashed border-slate-200 bg-slate-50 dark:border-slate-800 dark:bg-slate-900/40">
+            <div class="card-shadcn-content space-y-3">
+                <div class="flex items-center gap-3">
+                    <span
+                        class="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                        <i class="fas fa-route"></i>
+                    </span>
+                    <div>
+                        <p class="text-sm font-semibold text-slate-800 dark:text-white">Kullanım Önerileri</p>
+                        <p class="text-xs text-slate-500 dark:text-slate-400">Şablonların uygulanabilirliğini artırmak
+                            için bu adımları izle.</p>
+                    </div>
+                </div>
+                <ul class="space-y-2 text-sm text-slate-600 dark:text-slate-300">
+                    <li class="flex gap-2">
+                        <i class="fas fa-circle text-[0.45rem] pt-2 text-primary"></i>
+                        <span>Her büyük etkinlikten sonra şablon performans notları ekle.</span>
+                    </li>
+                    <li class="flex gap-2">
+                        <i class="fas fa-circle text-[0.45rem] pt-2 text-primary"></i>
+                        <span>Konfigürasyon JSON alanında oturma bloklarını etiketleyerek ekip paylaşımını
+                            kolaylaştır.</span>
+                    </li>
+                    <li class="flex gap-2">
+                        <i class="fas fa-circle text-[0.45rem] pt-2 text-primary"></i>
+                        <span>Silme işleminden önce şablonun aktif etkinliklerde kullanılmadığından emin ol.</span>
+                    </li>
+                </ul>
+            </div>
+        </section>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+{{ super() }}
+<script{% if g.csp_nonce %} nonce="{{ g.csp_nonce }}" {% endif %}>
+    document.addEventListener( 'DOMContentLoaded', () => {
+        const createCard = document.querySelector( '[data-create-card]' );
+        const toggleButtons = document.querySelectorAll( '[data-toggle-create]' );
+        const toggleCreateCard = () => {
+            if ( !createCard ) return;
+            createCard.classList.toggle( 'hidden' );
+            if ( !createCard.classList.contains( 'hidden' ) ) {
+                const focusable = createCard.querySelector( '[data-auto-focus]' );
+                requestAnimationFrame( () => focusable && focusable.focus() );
+            }
+        };
+        toggleButtons.forEach( ( button ) => button.addEventListener( 'click', toggleCreateCard ) );
+
+        document.querySelectorAll( '[data-template-delete]' ).forEach( ( form ) => {
+            form.addEventListener( 'submit', ( event ) => {
+                if ( !window.confirm( 'Bu şablonu silmek istediğine emin misin?' ) ) {
+                    event.preventDefault();
+                }
+            } );
+        } );
+
+        const notify = ( templateId, type ) => {
+            window.alert( `Şablon ${type} özelliği yakında eklenecek (ID: ${templateId})` );
+        };
+
+        document.querySelectorAll( '[data-template-view]' ).forEach( ( button ) => {
+            button.addEventListener( 'click', () => notify( button.dataset.templateView, 'görüntüleme' ) );
+        } );
+
+        document.querySelectorAll( '[data-template-edit]' ).forEach( ( button ) => {
+            button.addEventListener( 'click', () => notify( button.dataset.templateEdit, 'düzenleme' ) );
+        } );
+    } );
+</script>
+    {% endblock %}
+    </span>
+    <div>
+        <h2 class="card-shadcn-title text-lg">Mevcut Şablonlar</h2>
+        <p class="card-shadcn-description">Farklı oturma düzenlerini buradan yönet.</p>
+    </div>
+    </div>
+    </div>
+    <div class="card-shadcn-content">
+        {% if templates %}
+        <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+            {% for template in templates %}
+            <div
+                class="rounded-2xl border border-slate-200 bg-slate-50 p-5 shadow-sm transition hover:-translate-y-1 hover:shadow-lg dark:border-slate-800 dark:bg-slate-900/40">
+                <div class="flex items-center gap-3">
+                    <span
+                        class="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                        <i class="fas fa-layer-group"></i>
+                    </span>
+                    <div>
+                        <h3 class="text-base font-semibold text-slate-900 dark:text-white">{{ template.name }}</h3>
+                        <p class="text-xs uppercase tracking-[0.25em] text-slate-400">{{ template.category or
+                            'Kategori yok' }}</p>
+                    </div>
+                </div>
+                <div class="mt-4 space-y-2 text-sm text-slate-600 dark:text-slate-300">
+                    <div class="flex items-center gap-2">
+                        <i class="fas fa-map-marker-alt text-primary"></i>
+                        <span>Sahne: {{ template.stage_position.value if template.stage_position else
+                            'Belirtilmemiş' }}</span>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <i class="fas fa-clock text-primary"></i>
+                        <span>Oluşturma: {{ template.created_at.strftime('%d.%m.%Y') }}</span>
+                    </div>
+                </div>
+                <div class="mt-5 flex flex-wrap gap-2">
+                    <button type="button" class="btn-shadcn btn-shadcn-ghost btn-shadcn-sm"
+                        data-view-id="{{ template.id }}">
+                        <i class="fas fa-eye"></i>
+                        <span>Görüntüle</span>
+                    </button>
+                    <button type="button" class="btn-shadcn btn-shadcn-outline btn-shadcn-sm"
+                        data-edit-id="{{ template.id }}">
+                        <i class="fas fa-edit"></i>
+                        <span>Düzenle</span>
+                    </button>
+                    <form method="POST"
+                        action="{{ url_for('template.delete_seating_template', template_id=template.id) }}"
+                        class="inline-flex" onsubmit="return confirm('Bu şablonu silmek istediğine emin misin?');">
+                        <button type="submit" class="btn-shadcn btn-shadcn-destructive btn-shadcn-sm">
+                            <i class="fas fa-trash"></i>
+                            <span>Sil</span>
+                        </button>
+                    </form>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="alert-shadcn alert-shadcn-default">
+            <div class="flex items-start gap-3">
+                <i class="fas fa-info-circle text-primary"></i>
+                <div>
+                    <p class="text-sm text-slate-600 dark:text-slate-300">Henüz koltuk düzeni şablonu oluşturulmadı.
+                    </p>
+                    <p class="text-xs text-slate-500 dark:text-slate-400">Yeni bir tane eklemek için "Yeni Şablon"
+                        butonuna tıkla.</p>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+    </section>
+    </div>
+
+    <script>
+        const toggleButtons = document.querySelectorAll( '[data-toggle-create]' );
+        const createCard = document.querySelector( '[data-create-card]' );
+        const viewButtons = document.querySelectorAll( '[data-view-id]' );
+        const editButtons = document.querySelectorAll( '[data-edit-id]' );
+
+        if ( toggleButtons.length && createCard ) {
+            toggleButtons.forEach( ( button ) => {
+                button.addEventListener( 'click', () => {
+                    createCard.classList.toggle( 'hidden' );
+                } );
+            } );
+        }
+
+        viewButtons.forEach( ( button ) => {
+            button.addEventListener( 'click', () => {
+                const templateId = button.dataset.viewId;
+                alert( `Şablon önizleme özelliği yakında eklenecek (ID: ${templateId})` );
+            } );
+        } );
+
+        editButtons.forEach( ( button ) => {
+            button.addEventListener( 'click', () => {
+                const templateId = button.dataset.editId;
+                alert( `Şablon düzenleme özelliği yakında eklenecek (ID: ${templateId})` );
+            } );
+        } );
+    </script>
+    {% endblock %}

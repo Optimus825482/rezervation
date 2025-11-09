@@ -1,0 +1,231 @@
+{% extends "base.html" %}
+{% block title %}Rezervasyonlar{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <div class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+        <div>
+            <h1 class="text-3xl font-bold text-slate-900 dark:text-white">Rezervasyonlar</h1>
+            <p class="mt-1 text-slate-600 dark:text-slate-400">Tüm rezervasyonları tek noktadan takip et.</p>
+        </div>
+        <div
+            class="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-600 shadow-sm dark:border-slate-800 dark:bg-slate-900 dark:text-slate-300">
+            <i class="fas fa-users text-primary"></i>
+            <span>{{ reservations|length }} rezervasyon</span>
+        </div>
+    </div>
+
+    {% if reservations %}
+    <div class="card-shadcn overflow-hidden">
+        <div class="card-shadcn-header pb-4">
+            <h3 class="card-shadcn-title text-xl">Aktif Rezervasyonlar</h3>
+            <p class="card-shadcn-description">Rezervasyonu seçerek detaylarını inceleyebilir, QR kodunu indirebilirsin.
+            </p>
+        </div>
+        <div class="card-shadcn-content p-0">
+            <div class="max-h-[70vh] overflow-x-auto">
+                <table class="min-w-full text-sm">
+                    <thead
+                        class="bg-slate-100 text-left text-xs font-semibold uppercase tracking-wide text-slate-500 dark:bg-slate-900/60 dark:text-slate-400">
+                        <tr>
+                            <th class="min-w-[180px] px-6 py-3">Ad Soyad</th>
+                            <th class="min-w-[160px] px-6 py-3">Telefon</th>
+                            <th class="min-w-[150px] px-6 py-3">Kod</th>
+                            <th class="px-6 py-3 text-center">QR</th>
+                            <th class="px-6 py-3 text-center">Check-in</th>
+                            <th class="px-6 py-3 text-center">Aksiyon</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-200 dark:divide-slate-800">
+                        {% for reservation in reservations %}
+                        <tr class="transition hover:bg-slate-50/80 dark:hover:bg-slate-900/40">
+                            <td class="px-6 py-4">
+                                <div class="flex items-center gap-3">
+                                    <div
+                                        class="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-primary to-orange-500 text-base font-bold text-white">
+                                        {{ reservation.customer_name[0]|upper if reservation.customer_name else '?' }}
+                                    </div>
+                                    <div class="flex flex-col">
+                                        <span class="font-semibold text-slate-900 dark:text-white">{{
+                                            reservation.customer_name|default('-', true)|safe_text }}</span>
+                                        <span class="text-xs text-slate-400 dark:text-slate-500">{{
+                                            reservation.event.name if reservation.event else 'Etkinlik bilgisi yok'
+                                            }}</span>
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="px-6 py-4 text-slate-600 dark:text-slate-300">
+                                <div class="flex items-center gap-2">
+                                    <i class="fas fa-mobile-alt text-slate-400"></i>
+                                    {{ reservation.phone|format_phone }}
+                                </div>
+                            </td>
+                            <td class="px-6 py-4">
+                                <code
+                                    class="rounded-lg bg-slate-100 px-3 py-1 font-mono text-sm text-primary-600 dark:bg-slate-800 dark:text-primary-300">
+                                    {{ reservation.reservation_code|safe_text }}
+                                </code>
+                            </td>
+                            <td class="px-6 py-4 text-center">
+                                {% if reservation.qr_code_path %}
+                                <button type="button" data-qr-open="qrModal{{ reservation.id }}"
+                                    class="inline-flex items-center gap-2 rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-blue-600 transition hover:bg-blue-100 dark:border-blue-900 dark:bg-blue-900/30 dark:text-blue-300 dark:hover:bg-blue-900/50">
+                                    <i class="fas fa-qrcode"></i>
+                                    QR Göster
+                                </button>
+                                {% else %}
+                                <span class="text-xs italic text-slate-400 dark:text-slate-500">QR oluşturulmamış</span>
+                                {% endif %}
+                            </td>
+                            <td class="px-6 py-4 text-center">
+                                {% if reservation.checked_in %}
+                                <span class="badge-shadcn badge-shadcn-default inline-flex items-center gap-1">
+                                    <i class="fas fa-circle-check"></i>
+                                    Tamamlandı
+                                </span>
+                                {% else %}
+                                <span class="badge-shadcn badge-shadcn-outline inline-flex items-center gap-1">
+                                    <i class="fas fa-clock"></i>
+                                    Bekliyor
+                                </span>
+                                {% endif %}
+                            </td>
+                            <td class="px-6 py-4 text-center">
+                                <a href="{{ url_for('reservation.view', id=reservation.id) }}"
+                                    class="btn-shadcn btn-shadcn-outline btn-shadcn-sm inline-flex items-center gap-2">
+                                    <i class="fas fa-eye"></i>
+                                    Görüntüle
+                                </a>
+                            </td>
+                        </tr>
+
+                        {% if reservation.qr_code_path %}
+                        <div id="qrModal{{ reservation.id }}"
+                            class="fixed inset-0 z-50 hidden items-center justify-center bg-black/60 px-4 py-6 backdrop-blur-sm"
+                            data-qr-modal>
+                            <div class="w-full max-w-md rounded-2xl border border-slate-200 bg-white shadow-2xl transition dark:border-slate-800 dark:bg-slate-900"
+                                role="dialog" aria-modal="true">
+                                <div
+                                    class="flex items-center justify-between border-b border-slate-200 px-6 py-4 dark:border-slate-800">
+                                    <div class="flex items-center gap-3">
+                                        <div
+                                            class="flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                                            <i class="fas fa-qrcode text-lg"></i>
+                                        </div>
+                                        <div>
+                                            <p class="text-sm font-semibold text-slate-900 dark:text-white">QR Kod</p>
+                                            <p class="text-xs text-slate-500 dark:text-slate-400">{{
+                                                reservation.customer_name|safe_text }}</p>
+                                        </div>
+                                    </div>
+                                    <button type="button" data-qr-close="qrModal{{ reservation.id }}"
+                                        class="inline-flex h-9 w-9 items-center justify-center rounded-full bg-slate-100 text-slate-500 transition hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700"
+                                        aria-label="Kapat">
+                                        <i class="fas fa-xmark"></i>
+                                    </button>
+                                </div>
+
+                                <div class="px-6 py-8 text-center">
+                                    <div
+                                        class="inline-block rounded-2xl border border-slate-200 bg-white p-4 shadow-lg dark:border-slate-700 dark:bg-slate-900/50">
+                                        <img src="{{ url_for('static', filename=reservation.qr_code_path) }}"
+                                            alt="QR Code" class="h-64 w-64 object-contain" loading="lazy">
+                                    </div>
+                                    <div
+                                        class="mt-6 inline-flex flex-col items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-medium text-slate-700 dark:border-slate-700 dark:bg-slate-800/60 dark:text-slate-200">
+                                        <span class="text-xs uppercase tracking-wide text-slate-400">Rezervasyon
+                                            Kodu</span>
+                                        <code
+                                            class="text-base font-bold text-primary-600 dark:text-primary-300">{{ reservation.reservation_code|safe_text }}</code>
+                                    </div>
+                                </div>
+
+                                <div
+                                    class="flex gap-3 border-t border-slate-200 bg-slate-100/70 px-6 py-4 dark:border-slate-800 dark:bg-slate-900/40">
+                                    <a href="{{ url_for('static', filename=reservation.qr_code_path) }}"
+                                        download="qr_{{ reservation.reservation_code }}.png"
+                                        class="btn-shadcn btn-shadcn-default flex-1 gap-2">
+                                        <i class="fas fa-download"></i>
+                                        İndir
+                                    </a>
+                                    <button type="button" data-qr-close="qrModal{{ reservation.id }}"
+                                        class="btn-shadcn btn-shadcn-outline flex-1">
+                                        Kapat
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        {% endif %}
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    {% else %}
+    <div class="card-shadcn text-center py-16">
+        <div
+            class="mx-auto mb-4 flex h-20 w-20 items-center justify-center rounded-full border border-dashed border-slate-300 dark:border-slate-700">
+            <i class="fas fa-ticket-alt text-3xl text-slate-300 dark:text-slate-600"></i>
+        </div>
+        <h3 class="text-xl font-semibold text-slate-900 dark:text-white">Henüz rezervasyon yok</h3>
+        <p class="mt-2 text-sm text-slate-500 dark:text-slate-400">Rezervasyon oluşturulduğunda burada listelenecek.</p>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+{{ super() }}
+<script{% if g.csp_nonce %} nonce="{{ g.csp_nonce }}" {% endif %}>
+    document.addEventListener( 'DOMContentLoaded', () => {
+        const body = document.body;
+
+        const openModal = ( id ) => {
+            const modal = document.getElementById( id );
+            if ( !modal ) return;
+            modal.classList.remove( 'hidden' );
+            modal.classList.add( 'flex' );
+            body.dataset.scrollLock = 'true';
+            body.style.overflow = 'hidden';
+        };
+
+        const closeModal = ( id ) => {
+            const modal = document.getElementById( id );
+            if ( !modal ) return;
+            modal.classList.add( 'hidden' );
+            modal.classList.remove( 'flex' );
+            if ( !document.querySelector( '[data-qr-modal]:not(.hidden)' ) ) {
+                body.dataset.scrollLock = 'false';
+                body.style.overflow = '';
+            }
+        };
+
+        document.querySelectorAll( '[data-qr-open]' ).forEach( ( button ) => {
+            button.addEventListener( 'click', () => openModal( button.dataset.qrOpen ) );
+        } );
+
+        document.querySelectorAll( '[data-qr-close]' ).forEach( ( button ) => {
+            button.addEventListener( 'click', () => closeModal( button.dataset.qrClose ) );
+        } );
+
+        document.querySelectorAll( '[data-qr-modal]' ).forEach( ( modal ) => {
+            modal.addEventListener( 'click', ( event ) => {
+                if ( event.target === modal ) {
+                    closeModal( modal.id );
+                }
+            } );
+        } );
+
+        document.addEventListener( 'keydown', ( event ) => {
+            if ( event.key === 'Escape' ) {
+                document.querySelectorAll( '[data-qr-modal]' ).forEach( ( modal ) => {
+                    if ( !modal.classList.contains( 'hidden' ) ) {
+                        closeModal( modal.id );
+                    }
+                } );
+            }
+        } );
+    } );
+</script>
+    {% endblock %}

@@ -1,0 +1,233 @@
+{% extends "base.html" %}
+{% block title %}Genel Özet Raporu{% endblock %}
+
+{% block content %}
+{% set checkin_rate = ((checked_in / total_reservations) * 100)|round(1) if total_reservations > 0 else 0 %}
+{% set pending_checkins = total_reservations - checked_in %}
+<div class="space-y-6">
+    <div class="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+        <div class="space-y-1">
+            <p class="text-xs uppercase tracking-[0.3em] text-slate-400 dark:text-slate-600">Raporlama</p>
+            <h1 class="text-3xl font-bold text-slate-900 dark:text-white">Genel Özet Raporu</h1>
+            <p class="text-sm text-slate-600 dark:text-slate-400">Şirket seviyesinde etkinlik ve rezervasyon
+                performansını incele.</p>
+        </div>
+        <div class="flex flex-wrap gap-2">
+            <a href="{{ url_for('report.index') }}" class="btn-shadcn btn-shadcn-outline btn-shadcn-sm">
+                <i class="fas fa-arrow-left"></i>
+                <span>Rapor Merkezi</span>
+            </a>
+            <button type="button" class="btn-shadcn btn-shadcn-ghost btn-shadcn-sm" data-report-copy>
+                <i class="fas fa-copy"></i>
+                <span>Özet Bilgiyi Kopyala</span>
+            </button>
+        </div>
+    </div>
+
+    <section class="card-shadcn bg-gradient-to-br from-emerald-500/10 via-transparent to-primary/10">
+        <div class="card-shadcn-content space-y-4 lg:space-y-0 lg:flex lg:items-center lg:justify-between">
+            <div class="space-y-3">
+                <p class="text-xs uppercase tracking-[0.25em] text-emerald-600 dark:text-emerald-300">KPI ÖZETİ</p>
+                <h2 class="text-2xl font-semibold text-slate-900 dark:text-white">Check-in başarı oranı: {{ checkin_rate
+                    }}%</h2>
+                <p class="text-sm text-slate-600 dark:text-slate-300">Rezervasyonların {{ checkin_rate }}%'i girişte
+                    doğrulandı. Kalan {{ pending_checkins }} kayıt için check-in bekleniyor.</p>
+                <div class="w-full max-w-xl rounded-full bg-slate-200 dark:bg-slate-800">
+                    <div class="h-2 rounded-full bg-emerald-500 transition-all" style="width: {{ checkin_rate }}%;">
+                    </div>
+                </div>
+            </div>
+            <div
+                class="rounded-2xl border border-white/40 bg-white/70 p-4 text-xs leading-relaxed text-slate-600 shadow-sm backdrop-blur dark:border-slate-700/60 dark:bg-slate-900/60 dark:text-slate-300">
+                <strong class="block text-sm font-semibold text-slate-800 dark:text-white">Önerilen Aksiyon</strong>
+                Check-in oranı %70 altındaysa ekipleri uyar ve giriş noktalarındaki görev dağılımını gözden geçir.
+            </div>
+        </div>
+    </section>
+
+    <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <div class="card-shadcn">
+            <div class="card-shadcn-content space-y-3">
+                <div class="flex items-center justify-between">
+                    <span
+                        class="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                        <i class="fas fa-calendar-alt"></i>
+                    </span>
+                    <span class="text-xs uppercase tracking-[0.25em] text-slate-400">Etkinlikler</span>
+                </div>
+                <p class="text-sm text-slate-500 dark:text-slate-400">Toplam planlanan etkinlik sayısı</p>
+                <p class="text-4xl font-semibold text-slate-900 dark:text-white">{{ total_events }}</p>
+            </div>
+        </div>
+
+        <div class="card-shadcn">
+            <div class="card-shadcn-content space-y-3">
+                <div class="flex items-center justify-between">
+                    <span
+                        class="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-500">
+                        <i class="fas fa-ticket-alt"></i>
+                    </span>
+                    <span class="text-xs uppercase tracking-[0.25em] text-slate-400">Rezervasyonlar</span>
+                </div>
+                <p class="text-sm text-slate-500 dark:text-slate-400">Toplam kayıtlı rezervasyon sayısı</p>
+                <p class="text-4xl font-semibold text-slate-900 dark:text-white">{{ total_reservations }}</p>
+            </div>
+        </div>
+
+        <div class="card-shadcn">
+            <div class="card-shadcn-content space-y-3">
+                <div class="flex items-center justify-between">
+                    <span
+                        class="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-sky-500/10 text-sky-500">
+                        <i class="fas fa-qrcode"></i>
+                    </span>
+                    <span class="text-xs uppercase tracking-[0.25em] text-slate-400">Check-in</span>
+                </div>
+                <p class="text-sm text-slate-500 dark:text-slate-400">Tamamlanan check-in oranı</p>
+                <p class="text-4xl font-semibold text-slate-900 dark:text-white">{{ checkin_rate }}%</p>
+            </div>
+        </div>
+
+        <div class="card-shadcn">
+            <div class="card-shadcn-content space-y-3">
+                <div class="flex items-center justify-between">
+                    <span
+                        class="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-amber-500/10 text-amber-500">
+                        <i class="fas fa-hourglass-half"></i>
+                    </span>
+                    <span class="text-xs uppercase tracking-[0.25em] text-slate-400">Bekleyenler</span>
+                </div>
+                <p class="text-sm text-slate-500 dark:text-slate-400">Henüz check-in yapılmamış rezervasyonlar</p>
+                <p class="text-4xl font-semibold text-slate-900 dark:text-white">{{ pending_checkins }}</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="grid gap-6 lg:grid-cols-[2fr,1fr]">
+        <section class="card-shadcn">
+            <div class="card-shadcn-header pb-4">
+                <div class="flex items-center gap-3">
+                    <span
+                        class="inline-flex h-11 w-11 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                        <i class="fas fa-table"></i>
+                    </span>
+                    <div>
+                        <h2 class="card-shadcn-title text-lg">Özet Tablosu</h2>
+                        <p class="card-shadcn-description">Başlıca metrikleri ekiplerle paylaşmak için hızlıca kopyala.
+                        </p>
+                    </div>
+                </div>
+            </div>
+            <div class="card-shadcn-content overflow-x-auto">
+                <table class="min-w-full text-sm">
+                    <thead
+                        class="bg-slate-100 text-left text-xs font-semibold uppercase tracking-wide text-slate-500 dark:bg-slate-900/60 dark:text-slate-400">
+                        <tr>
+                            <th class="px-4 py-3">Metrik</th>
+                            <th class="px-4 py-3">Değer</th>
+                            <th class="px-4 py-3">Not</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-200 dark:divide-slate-800">
+                        <tr>
+                            <td class="px-4 py-3">Toplam Etkinlik</td>
+                            <td class="px-4 py-3 font-medium text-slate-900 dark:text-white">{{ total_events }}</td>
+                            <td class="px-4 py-3 text-xs text-slate-500">Planlanan ve tamamlanan etkinliklerin toplamı
+                            </td>
+                        </tr>
+                        <tr>
+                            <td class="px-4 py-3">Toplam Rezervasyon</td>
+                            <td class="px-4 py-3 font-medium text-slate-900 dark:text-white">{{ total_reservations }}
+                            </td>
+                            <td class="px-4 py-3 text-xs text-slate-500">QR kodu oluşturulmuş kayıtlar dahil</td>
+                        </tr>
+                        <tr>
+                            <td class="px-4 py-3">Check-in Sayısı</td>
+                            <td class="px-4 py-3 font-medium text-slate-900 dark:text-white">{{ checked_in }}</td>
+                            <td class="px-4 py-3 text-xs text-slate-500">Manuel ve QR tüm girişler</td>
+                        </tr>
+                        <tr>
+                            <td class="px-4 py-3">Check-in Oranı</td>
+                            <td class="px-4 py-3 font-medium text-slate-900 dark:text-white">{{ checkin_rate }}%</td>
+                            <td class="px-4 py-3 text-xs text-slate-500">%75 üzeri hedef optimal performans</td>
+                        </tr>
+                        <tr>
+                            <td class="px-4 py-3">Bekleyen Rezervasyon</td>
+                            <td class="px-4 py-3 font-medium text-slate-900 dark:text-white">{{ pending_checkins }}</td>
+                            <td class="px-4 py-3 text-xs text-slate-500">Girişte doğrulamayı bekleyen kayıtlar</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <section
+            class="card-shadcn border border-dashed border-slate-200 bg-slate-50 dark:border-slate-800 dark:bg-slate-900/40">
+            <div class="card-shadcn-content space-y-4">
+                <div class="flex items-center gap-3">
+                    <span
+                        class="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-slate-900/10 text-slate-900 dark:bg-slate-100/10 dark:text-slate-100">
+                        <i class="fas fa-bell"></i>
+                    </span>
+                    <div>
+                        <p class="text-sm font-semibold text-slate-900 dark:text-white">İzleme Notları</p>
+                        <p class="text-xs text-slate-500 dark:text-slate-400">Operasyon ekiplerine hızlı hatırlatmalar.
+                        </p>
+                    </div>
+                </div>
+                <ul class="space-y-2 text-sm text-slate-600 dark:text-slate-300">
+                    <li class="flex items-start gap-2">
+                        <i class="fas fa-circle text-[0.45rem] pt-2 text-primary"></i>
+                        <span>Bekleyen rezervasyonlar için giriş bölgesine ek personel yönlendir.</span>
+                    </li>
+                    <li class="flex items-start gap-2">
+                        <i class="fas fa-circle text-[0.45rem] pt-2 text-primary"></i>
+                        <span>Kontrolör panelinden manuel check-in oranını haftalık takip et.</span>
+                    </li>
+                    <li class="flex items-start gap-2">
+                        <i class="fas fa-circle text-[0.45rem] pt-2 text-primary"></i>
+                        <span>Rapordan elde edilen verileri paylaşırken CSV dışa aktarım özelliğini (yakında)
+                            kullan.</span>
+                    </li>
+                </ul>
+                <button type="button" class="btn-shadcn btn-shadcn-outline w-full" data-report-reminder>
+                    <i class="fas fa-clock"></i>
+                    <span>Haftalık Hatırlatma Oluştur</span>
+                </button>
+            </div>
+        </section>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+{{ super() }}
+<script{% if g.csp_nonce %} nonce="{{ g.csp_nonce }}" {% endif %}>
+    document.addEventListener( 'DOMContentLoaded', () => {
+        const copyButton = document.querySelector( '[data-report-copy]' );
+        if ( copyButton ) {
+            copyButton.addEventListener( 'click', async () => {
+                const summaryText = `Toplam etkinlik: {{ total_events }} | Toplam rezervasyon: {{ total_reservations }} | Check-in:
+    {{ checked_in }} (%{{ checkin_rate }}) | Bekleyen: {{ pending_checkins }}`;
+                try {
+                    if ( navigator.clipboard && navigator.clipboard.writeText ) {
+                        await navigator.clipboard.writeText( summaryText );
+                        window.alert( 'Özet pano içeriği kopyalandı.' );
+                    } else {
+                        throw new Error( 'Desteklenmeyen tarayıcı' );
+                    }
+                } catch ( error ) {
+                    window.alert( 'Panoya kopyalanamadı. Lütfen elle seçip kopyala.' );
+                }
+            } );
+        }
+
+        const reminderButton = document.querySelector( '[data-report-reminder]' );
+        if ( reminderButton ) {
+            reminderButton.addEventListener( 'click', () => {
+                window.alert( 'Hatırlatma planlama özelliği yakında eklenecek. Şimdilik takvimine manuel kayıt oluştur.' );
+            } );
+        }
+    } );
+</script>
+    {% endblock %}

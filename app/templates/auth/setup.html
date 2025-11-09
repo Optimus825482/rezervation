@@ -1,0 +1,179 @@
+{% extends "base.html" %}
+
+{% block title %}İlk Kurulum - EventFlow{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 px-4 py-12">
+    <div class="max-w-4xl mx-auto">
+        <!-- Header -->
+        <div class="text-center mb-8">
+            <img src="/static/uploads/logos/logo.png" alt="EventFlow" class="h-20 mx-auto mb-4 drop-shadow-2xl">
+            <h1 class="text-3xl font-bold text-white mb-2">İlk Kurulum</h1>
+            <p class="text-slate-400">EventFlow'u kullanmaya başlamak için bilgilerinizi girin</p>
+        </div>
+
+        <form method="POST" class="space-y-6">
+            <!-- Şirket Bilgileri Card -->
+            <div class="card-shadcn bg-slate-800/50 backdrop-blur-sm border-slate-700">
+                <div class="card-shadcn-header">
+                    <h3 class="card-shadcn-title text-white flex items-center">
+                        <i class="fas fa-building text-primary mr-3"></i>
+                        Şirket Bilgileri
+                    </h3>
+                    <p class="card-shadcn-description">Şirket veya organizasyon bilgileriniz</p>
+                </div>
+
+                <div class="card-shadcn-content">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <!-- Şirket Adı -->
+                        <div class="space-y-2">
+                            <label class="label-shadcn text-slate-200">
+                                <i class="fas fa-briefcase mr-2 text-primary"></i>
+                                Şirket Adı
+                            </label>
+                            <input type="text"
+                                class="input-shadcn bg-slate-700/50 border-slate-600 text-white placeholder:text-slate-400 focus:border-primary"
+                                name="company_name" placeholder="Şirket adınız" required>
+                        </div>
+
+                        <!-- E-posta -->
+                        <div class="space-y-2">
+                            <label class="label-shadcn text-slate-200">
+                                <i class="fas fa-envelope mr-2 text-primary"></i>
+                                E-posta
+                            </label>
+                            <input type="email"
+                                class="input-shadcn bg-slate-700/50 border-slate-600 text-white placeholder:text-slate-400 focus:border-primary"
+                                name="company_email" placeholder="info@sirket.com" autocomplete="email" required>
+                        </div>
+
+                        <!-- Telefon -->
+                        <div class="space-y-2">
+                            <label class="label-shadcn text-slate-200">
+                                <i class="fas fa-phone mr-2 text-primary"></i>
+                                Telefon
+                            </label>
+                            <input type="text"
+                                class="input-shadcn bg-slate-700/50 border-slate-600 text-white placeholder:text-slate-400 focus:border-primary"
+                                name="company_phone" placeholder="05XX XXX XX XX" autocomplete="tel" required>
+                        </div>
+
+                        <!-- Adres -->
+                        <div class="space-y-2">
+                            <label class="label-shadcn text-slate-200">
+                                <i class="fas fa-map-marker-alt mr-2 text-primary"></i>
+                                Adres
+                            </label>
+                            <input type="text"
+                                class="input-shadcn bg-slate-700/50 border-slate-600 text-white placeholder:text-slate-400 focus:border-primary"
+                                name="company_address" placeholder="Adres (opsiyonel)" autocomplete="street-address">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Yönetici Kullanıcı Card -->
+            <div class="card-shadcn bg-slate-800/50 backdrop-blur-sm border-slate-700">
+                <div class="card-shadcn-header">
+                    <h3 class="card-shadcn-title text-white flex items-center">
+                        <i class="fas fa-user-shield text-primary mr-3"></i>
+                        Yönetici Kullanıcı
+                    </h3>
+                    <p class="card-shadcn-description">Ana yönetici hesabı bilgileri</p>
+                </div>
+
+                <div class="card-shadcn-content">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <!-- Ad -->
+                        <div class="space-y-2">
+                            <label class="label-shadcn text-slate-200">
+                                <i class="fas fa-user mr-2 text-primary"></i>
+                                Ad
+                            </label>
+                            <input type="text"
+                                class="input-shadcn bg-slate-700/50 border-slate-600 text-white placeholder:text-slate-400 focus:border-primary"
+                                name="first_name" placeholder="Adınız" autocomplete="given-name" required>
+                        </div>
+
+                        <!-- Soyad -->
+                        <div class="space-y-2">
+                            <label class="label-shadcn text-slate-200">
+                                <i class="fas fa-user mr-2 text-primary"></i>
+                                Soyad
+                            </label>
+                            <input type="text"
+                                class="input-shadcn bg-slate-700/50 border-slate-600 text-white placeholder:text-slate-400 focus:border-primary"
+                                name="last_name" placeholder="Soyadınız" autocomplete="family-name" required>
+                        </div>
+
+                        <!-- Kullanıcı Adı -->
+                        <div class="space-y-2">
+                            <label class="label-shadcn text-slate-200">
+                                <i class="fas fa-at mr-2 text-primary"></i>
+                                Kullanıcı Adı
+                            </label>
+                            <input type="text"
+                                class="input-shadcn bg-slate-700/50 border-slate-600 text-white placeholder:text-slate-400 focus:border-primary"
+                                name="username" placeholder="kullanici_adi" autocomplete="username" required>
+                        </div>
+
+                        <!-- E-posta -->
+                        <div class="space-y-2">
+                            <label class="label-shadcn text-slate-200">
+                                <i class="fas fa-envelope mr-2 text-primary"></i>
+                                E-posta
+                            </label>
+                            <input type="email"
+                                class="input-shadcn bg-slate-700/50 border-slate-600 text-white placeholder:text-slate-400 focus:border-primary"
+                                name="email" placeholder="kullanici@email.com" autocomplete="email" required>
+                        </div>
+
+                        <!-- Şifre -->
+                        <div class="space-y-2 md:col-span-2">
+                            <label class="label-shadcn text-slate-200">
+                                <i class="fas fa-lock mr-2 text-primary"></i>
+                                Şifre
+                            </label>
+                            <input type="password"
+                                class="input-shadcn bg-slate-700/50 border-slate-600 text-white placeholder:text-slate-400 focus:border-primary"
+                                name="password" placeholder="••••••••••••" autocomplete="new-password" required>
+                            <div class="alert-shadcn alert-shadcn-default bg-slate-700/30 border-slate-600">
+                                <div class="alert-shadcn-description text-slate-300 text-sm">
+                                    <i class="fas fa-info-circle text-primary mr-2"></i>
+                                    En az 8 karakter, 1 büyük harf, 1 küçük harf, 1 rakam ve 1 özel karakter
+                                    içermelidir.
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Telefon -->
+                        <div class="space-y-2 md:col-span-2">
+                            <label class="label-shadcn text-slate-200">
+                                <i class="fas fa-mobile-alt mr-2 text-primary"></i>
+                                Telefon (Opsiyonel)
+                            </label>
+                            <input type="text"
+                                class="input-shadcn bg-slate-700/50 border-slate-600 text-white placeholder:text-slate-400 focus:border-primary"
+                                name="phone" placeholder="05XX XXX XX XX" autocomplete="tel">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Footer -->
+                <div class="card-shadcn-footer flex gap-3">
+                    <a href="{{ url_for('auth.login') }}"
+                        class="btn-shadcn btn-shadcn-outline flex-1 border-slate-600 text-slate-300 hover:bg-slate-700">
+                        <i class="fas fa-arrow-left mr-2"></i>
+                        Geri Dön
+                    </a>
+                    <button type="submit"
+                        class="btn-shadcn btn-shadcn-default flex-1 bg-green-600 hover:bg-green-700 text-white shadow-lg">
+                        <i class="fas fa-check-circle mr-2"></i>
+                        Kurulumu Tamamla
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,153 @@
+{% extends "base.html" %}
+{% block title %}Kontrolör Paneli{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <div class="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+        <div class="space-y-1">
+            <p class="text-xs uppercase tracking-[0.3em] text-slate-400 dark:text-slate-600">Salon yönetimi</p>
+            <h1 class="text-3xl font-bold text-slate-900 dark:text-white">Kontrolör Paneli</h1>
+            <p class="text-sm text-slate-600 dark:text-slate-400">Aktif etkinliği seç, rezervasyonları yönet ve hızlıca
+                check-in akışına geç.</p>
+        </div>
+        <div class="flex flex-wrap gap-2">
+            <a href="{{ url_for('event.index') }}" class="btn-shadcn btn-shadcn-outline btn-shadcn-sm">
+                <i class="fas fa-calendar-alt"></i>
+                <span>Etkinlik Listesi</span>
+            </a>
+            <a href="{{ url_for('reservation.index') }}" class="btn-shadcn btn-shadcn-ghost btn-shadcn-sm">
+                <i class="fas fa-ticket-alt"></i>
+                <span>Rezervasyonlar</span>
+            </a>
+        </div>
+    </div>
+
+    {% if not active_event_id %}
+    <section class="card-shadcn">
+        <div class="card-shadcn-header pb-4">
+            <div class="flex items-center gap-3">
+                <span class="inline-flex h-11 w-11 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                    <i class="fas fa-bolt"></i>
+                </span>
+                <div>
+                    <h2 class="card-shadcn-title text-lg">Aktif Etkinlik Seç</h2>
+                    <p class="card-shadcn-description">Paneli kullanmak için önce yönetmek istediğin etkinliği belirle.
+                    </p>
+                </div>
+            </div>
+        </div>
+        <div class="card-shadcn-content space-y-5">
+            {% if events %}
+            <form method="POST" action="{{ url_for('controller.select_event', event_id=0) }}" class="space-y-5"
+                data-controller-form>
+                <label class="space-y-2">
+                    <span class="label-shadcn text-sm font-semibold text-slate-700 dark:text-slate-200">Etkinlik</span>
+                    <select name="event_id" class="input-shadcn" aria-label="Aktif etkinlik seçimi"
+                        data-controller-select>
+                        <option value="">Etkinlik seç</option>
+                        {% for event in events %}
+                        <option value="{{ event.id }}">{{ event.name }} - {{ event.event_date }}</option>
+                        {% endfor %}
+                    </select>
+                </label>
+                <p class="text-xs text-slate-500 dark:text-slate-400">Seçimden sonra panel otomatik güncellenir ve
+                    ilgili aksiyonlar açılır.</p>
+            </form>
+            {% else %}
+            <div
+                class="rounded-xl border border-dashed border-slate-200 bg-slate-50 p-6 text-center text-sm text-slate-500 dark:border-slate-800 dark:bg-slate-900/40 dark:text-slate-300">
+                <i class="fas fa-calendar-minus mb-2 text-lg"></i>
+                <p>Şu an yönetebileceğin bir etkinlik bulunmuyor. Yeni etkinlik oluşturup tekrar dene.</p>
+            </div>
+            {% endif %}
+        </div>
+    </section>
+    {% else %}
+    <div class="grid gap-6 lg:grid-cols-[2fr,1fr]">
+        <section class="card-shadcn">
+            <div class="card-shadcn-header pb-4">
+                <div class="flex items-center gap-3">
+                    <span
+                        class="inline-flex h-11 w-11 items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-500">
+                        <i class="fas fa-check-circle"></i>
+                    </span>
+                    <div>
+                        <h2 class="card-shadcn-title text-lg">Aktif Etkinlik</h2>
+                        <p class="card-shadcn-description">Seçili etkinlik üzerinde anlık işlemler
+                            gerçekleştirebilirsin.</p>
+                    </div>
+                </div>
+            </div>
+            <div class="card-shadcn-content space-y-5">
+                <div
+                    class="rounded-xl bg-slate-100/60 p-4 text-sm text-slate-600 dark:bg-slate-900/40 dark:text-slate-300">
+                    <p class="text-xs uppercase tracking-[0.25em] text-slate-400">Etkinlik adı</p>
+                    <p class="mt-1 text-lg font-semibold text-slate-900 dark:text-white">{{ active_event_name }}</p>
+                </div>
+                <div class="flex flex-wrap gap-3">
+                    <a href="{{ url_for('controller.reservations') }}" class="btn-shadcn btn-shadcn-default">
+                        <i class="fas fa-users"></i>
+                        <span>Rezervasyonları Yönet</span>
+                    </a>
+                    <a href="{{ url_for('checkin.index') }}" class="btn-shadcn btn-shadcn-outline">
+                        <i class="fas fa-qrcode"></i>
+                        <span>Check-in Paneli</span>
+                    </a>
+                    <a href="{{ url_for('report.summary') }}" class="btn-shadcn btn-shadcn-ghost">
+                        <i class="fas fa-chart-line"></i>
+                        <span>Raporlar</span>
+                    </a>
+                </div>
+            </div>
+        </section>
+
+        <section
+            class="card-shadcn border border-dashed border-slate-200 bg-slate-50 dark:border-slate-800 dark:bg-slate-900/40">
+            <div class="card-shadcn-content space-y-4">
+                <div class="flex items-center gap-3">
+                    <span
+                        class="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-blue-500/10 text-blue-500">
+                        <i class="fas fa-info-circle"></i>
+                    </span>
+                    <div>
+                        <p class="text-sm font-semibold text-slate-800 dark:text-white">Hızlı İpuçları</p>
+                        <p class="text-xs text-slate-500 dark:text-slate-400">Kontrolör görevleri için kısa yol listesi.
+                        </p>
+                    </div>
+                </div>
+                <ul class="space-y-2 text-sm text-slate-600 dark:text-slate-300">
+                    <li class="flex items-start gap-2">
+                        <i class="fas fa-circle text-[0.45rem] pt-2 text-primary"></i>
+                        <span>Rezervasyon listesinde arama yaparak hızlı koltuk kontrolü sağlayabilirsin.</span>
+                    </li>
+                    <li class="flex items-start gap-2">
+                        <i class="fas fa-circle text-[0.45rem] pt-2 text-primary"></i>
+                        <span>Check-in panelinden manuel kod girerek sıradışı durumları çöz.</span>
+                    </li>
+                    <li class="flex items-start gap-2">
+                        <i class="fas fa-circle text-[0.45rem] pt-2 text-primary"></i>
+                        <span>Raporlardan anlık doluluk ve katılım trendlerini takip et.</span>
+                    </li>
+                </ul>
+            </div>
+        </section>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+{{ super() }}
+<script{% if g.csp_nonce %} nonce="{{ g.csp_nonce }}" {% endif %}>
+    document.addEventListener( 'DOMContentLoaded', () => {
+        document.querySelectorAll( '[data-controller-select]' ).forEach( ( select ) => {
+            select.addEventListener( 'change', () => {
+                const form = select.closest( '[data-controller-form]' );
+                if ( form ) {
+                    form.submit();
+                }
+            } );
+        } );
+    } );
+</script>
+    {% endblock %}
