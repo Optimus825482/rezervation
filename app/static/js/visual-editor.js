@@ -24,6 +24,7 @@ class VisualSeatingEditor {
         this.zoom = 1;
         this.pan = { x: 0, y: 0 };
         this.gridVisible = true; // Grid visibility toggle
+        this.showCollisionWarning = false; // Collision warning flag
         
         // Undo/Redo system
         this.history = [];
@@ -143,11 +144,16 @@ class VisualSeatingEditor {
     }
     
     setupEventListeners() {
-        // Canvas event listeners
+        // Canvas mouse event listeners
         this.canvas.addEventListener('mousedown', this.onMouseDown.bind(this));
         this.canvas.addEventListener('mousemove', this.onMouseMove.bind(this));
         this.canvas.addEventListener('mouseup', this.onMouseUp.bind(this));
         this.canvas.addEventListener('click', this.onClick.bind(this));
+        
+        // Canvas touch event listeners
+        this.canvas.addEventListener('touchstart', this.onTouchStart.bind(this), { passive: false });
+        this.canvas.addEventListener('touchmove', this.onTouchMove.bind(this), { passive: false });
+        this.canvas.addEventListener('touchend', this.onTouchEnd.bind(this), { passive: false });
         
         // Sahne drag event listener - Global listeners for better drag experience
         this.stage.addEventListener('mousedown', this.onStageMouseDown.bind(this));
@@ -248,8 +254,32 @@ class VisualSeatingEditor {
             reserved: false
         };
         
+        // Boundary check
+        seating.x = Math.max(0, Math.min(seating.x, this.config.width - seating.width));
+        seating.y = Math.max(0, Math.min(seating.y, this.config.height - seating.height));
+        
+        // Grid snap
+        seating.x = Math.round(seating.x / this.config.gridSize) * this.config.gridSize;
+        seating.y = Math.round(seating.y / this.config.gridSize) * this.config.gridSize;
+        
         console.log('➕ Seating ekleniyor:', seating);
+        
+        // Temporarily add to check collisions
         this.seatings.push(seating);
+        
+        // Check for collisions
+        const collisions = this.checkCollisions(seating);
+        if (collisions.length > 0) {
+            console.log('⚠️ Çakışma tespit edildi, pozisyon ayarlanıyor...');
+            // Try to resolve collision
+            const resolved = this.resolveCollisions(seating);
+            if (!resolved) {
+                console.warn('❌ Çakışma çözülemedi, oturum eklenemedi');
+                this.seatings.pop(); // Remove the seating
+                return null;
+            }
+        }
+        
         console.log('📊 Toplam seating:', this.seatings.length);
         
         this.saveState();
@@ -297,14 +327,50 @@ class VisualSeatingEditor {
     }
     
     onMouseMove(e) {
+        const rect = this.canvas.getBoundingClientRect();
+        const x = e.clientX - rect.left;
+        const y = e.clientY - rect.top;
+        
+        // Update cursor based on position
+        if (!this.isDragging) {
+            this.updateCursor(x, y);
+        }
+        
         if (this.isDragging && this.selectedSeating) {
-            const rect = this.canvas.getBoundingClientRect();
-            const x = e.clientX - rect.left;
-            const y = e.clientY - rect.top;
+            // Calculate new position
+            let newX = x - this.dragOffset.x;
+            let newY = y - this.dragOffset.y;
             
             // Grid snap
-            this.selectedSeating.x = Math.round((x - this.dragOffset.x) / this.config.gridSize) * this.config.gridSize;
-            this.selectedSeating.y = Math.round((y - this.dragOffset.y) / this.config.gridSize) * this.config.gridSize;
+            newX = Math.round(newX / this.config.gridSize) * this.config.gridSize;
+            newY = Math.round(newY / this.config.gridSize) * this.config.gridSize;
+            
+            // Boundary check - keep within canvas
+            newX = Math.max(0, Math.min(newX, this.config.width - this.selectedSeating.width));
+            newY = Math.max(0, Math.min(newY, this.config.height - this.selectedSeating.height));
+            
+            // Store old position for collision check
+            const oldX = this.selectedSeating.x;
+            const oldY = this.selectedSeating.y;
+            
+            // Try new position
+            this.selectedSeating.x = newX;
+            this.selectedSeating.y = newY;
+            
+            // Check for collisions
+            const collisions = this.checkCollisions(this.selectedSeating);
+            if (collisions.length > 0) {
+                // Revert to old position if collision detected
+                this.selectedSeating.x = oldX;
+                this.selectedSeating.y = oldY;
+                
+                // Visual feedback - flash red border
+                this.showCollisionWarning = true;
+                setTimeout(() => {
+                    this.showCollisionWarning = false;
+                    this.draw();
+                }, 200);
+            }
             
             this.draw();
         }
@@ -314,6 +380,81 @@ class VisualSeatingEditor {
         if (this.isDragging) {
             this.isDragging = false;
             this.saveState(); // Save state after drag operation
+        }
+    }
+    
+    // Touch event handlers
+    onTouchStart(e) {
+        e.preventDefault();
+        const touch = e.touches[0];
+        const rect = this.canvas.getBoundingClientRect();
+        const x = touch.clientX - rect.left;
+        const y = touch.clientY - rect.top;
+        
+        const seating = this.getSeatingAt(x, y);
+        if (seating) {
+            this.selectedSeating = seating;
+            this.isDragging = true;
+            this.dragOffset = {
+                x: x - seating.x,
+                y: y - seating.y
+            };
+            this.draw();
+        }
+    }
+    
+    onTouchMove(e) {
+        e.preventDefault();
+        if (this.isDragging && this.selectedSeating) {
+            const touch = e.touches[0];
+            const rect = this.canvas.getBoundingClientRect();
+            const x = touch.clientX - rect.left;
+            const y = touch.clientY - rect.top;
+            
+            // Calculate new position
+            let newX = x - this.dragOffset.x;
+            let newY = y - this.dragOffset.y;
+            
+            // Grid snap
+            newX = Math.round(newX / this.config.gridSize) * this.config.gridSize;
+            newY = Math.round(newY / this.config.gridSize) * this.config.gridSize;
+            
+            // Boundary check
+            newX = Math.max(0, Math.min(newX, this.config.width - this.selectedSeating.width));
+            newY = Math.max(0, Math.min(newY, this.config.height - this.selectedSeating.height));
+            
+            // Store old position for collision check
+            const oldX = this.selectedSeating.x;
+            const oldY = this.selectedSeating.y;
+            
+            // Try new position
+            this.selectedSeating.x = newX;
+            this.selectedSeating.y = newY;
+            
+            // Check for collisions
+            const collisions = this.checkCollisions(this.selectedSeating);
+            if (collisions.length > 0) {
+                // Revert to old position if collision detected
+                this.selectedSeating.x = oldX;
+                this.selectedSeating.y = oldY;
+                
+                // Visual feedback
+                this.showCollisionWarning = true;
+                setTimeout(() => {
+                    this.showCollisionWarning = false;
+                    this.draw();
+                }, 200);
+            }
+            
+            this.draw();
+        }
+    }
+    
+    onTouchEnd(e) {
+        e.preventDefault();
+        if (this.isDragging) {
+            this.isDragging = false;
+            this.saveState();
         }
     }
     
@@ -507,11 +648,15 @@ class VisualSeatingEditor {
     onStageMouseMove(e) {
         if (this.stageDragging) {
             const rect = this.container.querySelector('.visual-editor-container').getBoundingClientRect();
-            const newX = e.clientX - this.stageDragOffset.x - rect.left;
-            const newY = e.clientY - this.stageDragOffset.y - rect.top;
+            let newX = e.clientX - this.stageDragOffset.x - rect.left;
+            let newY = e.clientY - this.stageDragOffset.y - rect.top;
             
-            this.stage.style.left = `${Math.max(0, Math.min(newX, rect.width - this.stage.offsetWidth))}px`;
-            this.stage.style.top = `${Math.max(0, Math.min(newY, rect.height - this.stage.offsetHeight))}px`;
+            // Boundary check - keep stage within canvas
+            newX = Math.max(0, Math.min(newX, this.config.width - this.stage.offsetWidth));
+            newY = Math.max(0, Math.min(newY, this.config.height - this.stage.offsetHeight));
+            
+            this.stage.style.left = `${newX}px`;
+            this.stage.style.top = `${newY}px`;
             
             // Update stage position
             this.updateStagePosition();
@@ -691,28 +836,69 @@ class VisualSeatingEditor {
     }
     
     drawSelection(seating) {
-        // Selection border
-        this.ctx.strokeStyle = '#f39c12';
-        this.ctx.lineWidth = 3;
+        // Selection border - red if collision warning, orange otherwise
+        this.ctx.strokeStyle = this.showCollisionWarning ? '#e74c3c' : '#f39c12';
+        this.ctx.lineWidth = this.showCollisionWarning ? 4 : 3;
         this.ctx.strokeRect(seating.x - 2, seating.y - 2, seating.width + 4, seating.height + 4);
         
         // Handle points
         const handles = this.getSelectionHandles(seating);
-        this.ctx.fillStyle = '#f39c12';
+        this.ctx.fillStyle = this.showCollisionWarning ? '#e74c3c' : '#f39c12';
         
         handles.forEach(handle => {
             this.ctx.fillRect(handle.x - 3, handle.y - 3, 6, 6);
         });
+        
+        // Show collision warning text
+        if (this.showCollisionWarning) {
+            this.ctx.fillStyle = '#e74c3c';
+            this.ctx.font = 'bold 12px Arial';
+            this.ctx.textAlign = 'center';
+            this.ctx.fillText('⚠️ Çakışma!', seating.x + seating.width / 2, seating.y - 10);
+        }
     }
     
     getSelectionHandles(seating) {
         const x = seating.x, y = seating.y, w = seating.width, h = seating.height;
         return [
-            { x: x, y: y, cursor: 'nw-resize' },
-            { x: x + w, y: y, cursor: 'ne-resize' },
-            { x: x, y: y + h, cursor: 'sw-resize' },
-            { x: x + w, y: y + h, cursor: 'se-resize' }
+            { x: x, y: y, cursor: 'nw-resize', type: 'nw' },
+            { x: x + w, y: y, cursor: 'ne-resize', type: 'ne' },
+            { x: x, y: y + h, cursor: 'sw-resize', type: 'sw' },
+            { x: x + w, y: y + h, cursor: 'se-resize', type: 'se' },
+            { x: x + w/2, y: y, cursor: 'n-resize', type: 'n' },
+            { x: x + w/2, y: y + h, cursor: 's-resize', type: 's' },
+            { x: x, y: y + h/2, cursor: 'w-resize', type: 'w' },
+            { x: x + w, y: y + h/2, cursor: 'e-resize', type: 'e' }
         ];
+    }
+    
+    // Check if mouse is over a resize handle
+    getHandleAt(x, y) {
+        if (!this.selectedSeating) return null;
+        
+        const handles = this.getSelectionHandles(this.selectedSeating);
+        const handleSize = 6;
+        
+        for (let handle of handles) {
+            if (x >= handle.x - handleSize && x <= handle.x + handleSize &&
+                y >= handle.y - handleSize && y <= handle.y + handleSize) {
+                return handle;
+            }
+        }
+        
+        return null;
+    }
+    
+    // Update cursor based on handle
+    updateCursor(x, y) {
+        const handle = this.getHandleAt(x, y);
+        if (handle) {
+            this.canvas.style.cursor = handle.cursor;
+        } else if (this.getSeatingAt(x, y)) {
+            this.canvas.style.cursor = 'move';
+        } else {
+            this.canvas.style.cursor = 'crosshair';
+        }
     }
     
     // Public methods for external access
@@ -784,10 +970,26 @@ class VisualSeatingEditor {
     }
     
     loadSeatingsData(seatingsData) {
+        console.log('📥 Loading seatings data:', seatingsData.length, 'items');
         this.seatings = [];
-        seatingsData.forEach(data => {
-            this.addSeating(data.type, { x: data.x, y: data.y }, data);
+        
+        // Disable collision check temporarily for bulk loading
+        const tempCollisionCheck = this.checkCollisions;
+        this.checkCollisions = () => [];
+        
+        seatingsData.forEach((data, index) => {
+            console.log(`  ${index + 1}. Loading: ${data.name || data.seat_number}`);
+            const seating = this.addSeating(data.type, { x: data.x, y: data.y }, data);
+            if (!seating) {
+                console.warn(`  ⚠️ Failed to load seating ${index + 1}`);
+            }
         });
+        
+        // Re-enable collision check
+        this.checkCollisions = tempCollisionCheck;
+        
+        console.log('✅ Loaded', this.seatings.length, 'seatings');
+        this.draw();
     }
     
     getConfiguration() {
@@ -814,6 +1016,18 @@ class VisualSeatingEditor {
         }
     }
     
+    // Snap seating to grid
+    snapToGrid(seating) {
+        if (!seating) return;
+        
+        seating.x = Math.round(seating.x / this.config.gridSize) * this.config.gridSize;
+        seating.y = Math.round(seating.y / this.config.gridSize) * this.config.gridSize;
+        
+        // Boundary check
+        seating.x = Math.max(0, Math.min(seating.x, this.config.width - seating.width));
+        seating.y = Math.max(0, Math.min(seating.y, this.config.height - seating.height));
+    }
+    
     // Keyboard navigation
     setupKeyboardNavigation() {
         document.addEventListener('keydown', (e) => {
@@ -821,6 +1035,10 @@ class VisualSeatingEditor {
             
             const step = e.shiftKey ? this.config.gridSize : 1;
             let moved = false;
+            
+            // Store old position for collision check
+            const oldX = this.selectedSeating.x;
+            const oldY = this.selectedSeating.y;
             
             switch(e.key) {
                 case 'ArrowUp':
@@ -861,27 +1079,84 @@ class VisualSeatingEditor {
             if (moved) {
                 e.preventDefault();
                 this.snapToGrid(this.selectedSeating);
-                this.saveState();
+                
+                // Check for collisions after move
+                const collisions = this.checkCollisions(this.selectedSeating);
+                if (collisions.length > 0) {
+                    // Revert to old position
+                    this.selectedSeating.x = oldX;
+                    this.selectedSeating.y = oldY;
+                } else {
+                    this.saveState();
+                }
+                
                 this.draw();
             }
         });
     }
     
     duplicateSeating(seating) {
-        if (!seating) return;
+        if (!seating) return null;
         
         const newSeating = {
             ...seating,
             id: Date.now(),
-            x: seating.x + 20,
-            y: seating.y + 20,
+            x: seating.x + this.config.gridSize * 2,
+            y: seating.y + this.config.gridSize * 2,
             name: `${seating.name} (Kopya)`
         };
         
+        // Boundary check
+        newSeating.x = Math.max(0, Math.min(newSeating.x, this.config.width - newSeating.width));
+        newSeating.y = Math.max(0, Math.min(newSeating.y, this.config.height - newSeating.height));
+        
+        // Temporarily add to check collisions
         this.seatings.push(newSeating);
+        
+        // Check for collisions and resolve
+        const collisions = this.checkCollisions(newSeating);
+        if (collisions.length > 0) {
+            const resolved = this.resolveCollisions(newSeating);
+            if (!resolved) {
+                // If can't resolve, try different offsets
+                const offsets = [
+                    {x: -this.config.gridSize * 2, y: 0},
+                    {x: 0, y: -this.config.gridSize * 2},
+                    {x: this.config.gridSize * 4, y: 0},
+                    {x: 0, y: this.config.gridSize * 4}
+                ];
+                
+                let placed = false;
+                for (let offset of offsets) {
+                    newSeating.x = seating.x + offset.x;
+                    newSeating.y = seating.y + offset.y;
+                    
+                    // Boundary check
+                    if (newSeating.x < 0 || newSeating.y < 0 ||
+                        newSeating.x + newSeating.width > this.config.width ||
+                        newSeating.y + newSeating.height > this.config.height) {
+                        continue;
+                    }
+                    
+                    const testCollisions = this.checkCollisions(newSeating);
+                    if (testCollisions.length === 0) {
+                        placed = true;
+                        break;
+                    }
+                }
+                
+                if (!placed) {
+                    console.warn('❌ Çoğaltma için uygun pozisyon bulunamadı');
+                    this.seatings.pop();
+                    return null;
+                }
+            }
+        }
+        
         this.selectedSeating = newSeating;
         this.saveState();
         this.draw();
+        return newSeating;
     }
     
     deleteSeating(seating) {

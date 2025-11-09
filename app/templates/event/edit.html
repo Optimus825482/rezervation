@@ -1003,7 +1003,17 @@
         if ( visualEditor ) {
             console.log( '🎯 Masa ekleniyor:', seatingType );
 
-            const position = { x: 100, y: 100 };
+            // Merkeze yakın rastgele pozisyon
+            const centerX = visualEditor.config.width / 2;
+            const centerY = visualEditor.config.height / 2;
+            const randomOffsetX = (Math.random() - 0.5) * 200;
+            const randomOffsetY = (Math.random() - 0.5) * 200;
+            
+            const position = { 
+                x: Math.max(50, Math.min(centerX + randomOffsetX, visualEditor.config.width - 100)), 
+                y: Math.max(50, Math.min(centerY + randomOffsetY, visualEditor.config.height - 100))
+            };
+            
             const config = {
                 name: `${seatingType.name} ${visualEditor.seatings.length + 1}`,
                 width: seatingType.seat_type === 'table' ? 60 : 30,
@@ -1016,12 +1026,19 @@
 
             console.log( '📐 Masa config:', config );
             const result = visualEditor.addSeating( seatingType.seat_type, position, config );
-            console.log( '✅ Masa eklendi:', result );
-            console.log( '📊 Toplam masa sayısı:', visualEditor.seatings.length );
             
-            updateCapacityInfo();
+            if ( result ) {
+                console.log( '✅ Masa eklendi:', result );
+                console.log( '📊 Toplam masa sayısı:', visualEditor.seatings.length );
+                updateCapacityInfo();
+                showNotification( `${seatingType.name} eklendi`, 'success' );
+            } else {
+                console.error( '❌ Masa eklenemedi - çakışma veya alan yetersiz' );
+                showNotification( 'Oturum eklenemedi - uygun alan bulunamadı', 'warning' );
+            }
         } else {
             console.error( '❌ Visual editor bulunamadı!' );
+            showNotification( 'Editor hazır değil', 'error' );
         }
     }
 
@@ -1051,8 +1068,26 @@
 
                     // Load seatings
                     if ( config.seatings && config.seatings.length > 0 ) {
-                        visualEditor.loadSeatingsData( config.seatings );
+                        console.log( '📥 Mevcut düzen yükleniyor:', config.seatings.length, 'oturum' );
+                        
+                        // Map backend data to visual editor format
+                        const seatingsData = config.seatings.map( s => ({
+                            id: s.id,
+                            type: s.name ? s.name.toLowerCase().includes('masa') ? 'table' : 'chair' : 'table',
+                            x: s.position_x || 100,
+                            y: s.position_y || 100,
+                            width: s.width || 60,
+                            height: s.height || 40,
+                            capacity: s.capacity || 4,
+                            name: s.seat_number || s.name || `M${s.id}`,
+                            color: s.color_code || '#3498db',
+                            icon: s.icon || '🪑',
+                            reserved: false
+                        }));
+                        
+                        visualEditor.loadSeatingsData( seatingsData );
                         updateCapacityInfo();
+                        console.log( '✅ Düzen yüklendi' );
                     }
                 }
             } )
@@ -1359,18 +1394,63 @@
             }
         }
 
+        // Show loading state
+        showNotification( 'Şablon yükleniyor...', 'info' );
+
         fetch( `/event/template/${templateId}/load`, {
             method: 'POST'
         } )
             .then( response => response.json() )
             .then( result => {
                 if ( result.success && visualEditor ) {
-                    visualEditor.loadConfiguration( result.data );
+                    console.log( '📥 Şablon verisi:', result.data );
+                    
+                    // Clear existing seatings
+                    visualEditor.seatings = [];
+                    
+                    // Update canvas settings
+                    if ( result.data.canvas_width ) {
+                        document.getElementById( 'canvas-width' ).value = result.data.canvas_width;
+                        visualEditor.config.width = result.data.canvas_width;
+                    }
+                    if ( result.data.canvas_height ) {
+                        document.getElementById( 'canvas-height' ).value = result.data.canvas_height;
+                        visualEditor.config.height = result.data.canvas_height;
+                    }
+                    if ( result.data.grid_size ) {
+                        document.getElementById( 'grid-size' ).value = result.data.grid_size;
+                        visualEditor.config.gridSize = result.data.grid_size;
+                    }
+                    
+                    // Update stage position
+                    if ( result.data.stage_position ) {
+                        visualEditor.config.stagePosition = result.data.stage_position;
+                        visualEditor.positionStage();
+                    }
+                    
+                    // Load seatings
+                    if ( result.data.seatings && result.data.seatings.length > 0 ) {
+                        const seatingsData = result.data.seatings.map( s => ({
+                            type: s.type || 'table',
+                            x: s.position_x || 100,
+                            y: s.position_y || 100,
+                            width: s.width || 60,
+                            height: s.height || 40,
+                            capacity: s.capacity || 4,
+                            name: s.seat_number || `M${s.seating_type_id}`,
+                            color: s.color_code || '#3498db',
+                            icon: '🪑'
+                        }));
+                        
+                        visualEditor.loadSeatingsData( seatingsData );
+                    }
+                    
+                    visualEditor.draw();
                     updateCapacityInfo();
                     showNotification( 'Şablon başarıyla yüklendi!', 'success' );
                     closeTemplateModal();
                 } else {
-                    showNotification( 'Şablon yükleme hatası: ' + result.message, 'error' );
+                    showNotification( 'Şablon yükleme hatası: ' + ( result.message || 'Bilinmeyen hata' ), 'error' );
                 }
             } )
             .catch( error => {
