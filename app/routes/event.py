@@ -291,7 +291,7 @@ def seating_config(event_id):
                     'grid_size': event.grid_size or 20
                 },
                 'stage': {
-                    'position': event.stage_position or 'top',
+                    'position': event.stage_position.value if event.stage_position else 'top',
                     'config': json.loads(event.stage_config) if event.stage_config else {}
                 },
                 'seatings': [{
@@ -320,7 +320,6 @@ def seating_config(event_id):
     
     elif request.method == 'POST':
         # Save configuration via visual editor
-        data = request.get_json()
         result = save_layout(event_id)
         return result
 
@@ -343,7 +342,7 @@ def save_as_template(event_id):
             name=data['name'],
             description=data.get('description', ''),
             category=data.get('category', 'general'),
-            stage_position=event.stage_position,
+            stage_position=event.stage_position.value if event.stage_position else 'top',
             canvas_width=event.canvas_width or 800,
             canvas_height=event.canvas_height or 600,
             grid_size=event.grid_size or 20,

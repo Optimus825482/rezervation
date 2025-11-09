@@ -888,6 +888,11 @@
         const undoBtn = document.getElementById( 'undo-btn' );
         const redoBtn = document.getElementById( 'redo-btn' );
 
+        // Null check - buttons might not exist yet
+        if ( !undoBtn || !redoBtn ) {
+            return;
+        }
+
         if ( visualEditor ) {
             undoBtn.disabled = !visualEditor.canUndo();
             redoBtn.disabled = !visualEditor.canRedo();
