@@ -518,6 +518,30 @@
                                 </h4>
                                 <div class="space-y-2 text-xs text-slate-600 dark:text-slate-400">
                                     <div class="flex items-center justify-between">
+                                        <span>Tümünü Seç:</span>
+                                        <kbd class="px-2 py-1 bg-slate-100 dark:bg-slate-800 rounded border border-slate-300 dark:border-slate-600">Ctrl+A</kbd>
+                                    </div>
+                                    <div class="flex items-center justify-between">
+                                        <span>Çoklu Seçim:</span>
+                                        <kbd class="px-2 py-1 bg-slate-100 dark:bg-slate-800 rounded border border-slate-300 dark:border-slate-600">Shift+Click</kbd>
+                                    </div>
+                                    <div class="flex items-center justify-between">
+                                        <span>Lasso Seçim:</span>
+                                        <kbd class="px-2 py-1 bg-slate-100 dark:bg-slate-800 rounded border border-slate-300 dark:border-slate-600">Sürükle</kbd>
+                                    </div>
+                                    <div class="flex items-center justify-between">
+                                        <span>Kopyala:</span>
+                                        <kbd class="px-2 py-1 bg-slate-100 dark:bg-slate-800 rounded border border-slate-300 dark:border-slate-600">Ctrl+C</kbd>
+                                    </div>
+                                    <div class="flex items-center justify-between">
+                                        <span>Yapıştır:</span>
+                                        <kbd class="px-2 py-1 bg-slate-100 dark:bg-slate-800 rounded border border-slate-300 dark:border-slate-600">Ctrl+V</kbd>
+                                    </div>
+                                    <div class="flex items-center justify-between">
+                                        <span>Kes:</span>
+                                        <kbd class="px-2 py-1 bg-slate-100 dark:bg-slate-800 rounded border border-slate-300 dark:border-slate-600">Ctrl+X</kbd>
+                                    </div>
+                                    <div class="flex items-center justify-between">
                                         <span>Çoğalt:</span>
                                         <kbd class="px-2 py-1 bg-slate-100 dark:bg-slate-800 rounded border border-slate-300 dark:border-slate-600">Ctrl+D</kbd>
                                     </div>
@@ -541,6 +565,28 @@
                                         <span>Seçimi Kaldır:</span>
                                         <kbd class="px-2 py-1 bg-slate-100 dark:bg-slate-800 rounded border border-slate-300 dark:border-slate-600">Esc</kbd>
                                     </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Snap Ayarları -->
+                            <div class="border-t pt-4">
+                                <h4 class="text-sm font-semibold text-slate-700 dark:text-slate-200 mb-3 flex items-center gap-2">
+                                    <i class="fas fa-magnet text-green-500"></i>
+                                    Yapışma Ayarları
+                                </h4>
+                                <div class="space-y-3">
+                                    <label class="flex items-center gap-2 cursor-pointer">
+                                        <input type="checkbox" id="snap-to-grid" class="rounded" checked onchange="toggleSnapToGrid(this.checked)">
+                                        <span class="text-xs text-slate-700 dark:text-slate-200">Grid'e Yapış</span>
+                                    </label>
+                                    <label class="flex items-center gap-2 cursor-pointer">
+                                        <input type="checkbox" id="snap-to-objects" class="rounded" checked onchange="toggleSnapToObjects(this.checked)">
+                                        <span class="text-xs text-slate-700 dark:text-slate-200">Nesnelere Yapış</span>
+                                    </label>
+                                    <label class="flex items-center gap-2 cursor-pointer">
+                                        <input type="checkbox" id="show-guides" class="rounded" checked onchange="toggleAlignmentGuides(this.checked)">
+                                        <span class="text-xs text-slate-700 dark:text-slate-200">Hizalama Çizgileri</span>
+                                    </label>
                                 </div>
                             </div>
                         </div>
@@ -1580,29 +1626,51 @@
     function updateSelectedSeatingInfo() {
         const panel = document.getElementById( 'selected-seating-panel' );
         
-        if ( !visualEditor || !visualEditor.selectedSeating ) {
+        if ( !visualEditor || ( !visualEditor.selectedSeating && ( !visualEditor.selectedSeatings || visualEditor.selectedSeatings.length === 0 ) ) ) {
             panel.style.display = 'none';
             return;
         }
 
-        const seating = visualEditor.selectedSeating;
         panel.style.display = 'block';
 
-        document.getElementById( 'selected-name' ).textContent = seating.name || '-';
-        document.getElementById( 'selected-type' ).textContent = seating.type || '-';
-        document.getElementById( 'selected-capacity' ).textContent = seating.capacity || '-';
-        document.getElementById( 'selected-position' ).textContent = `${Math.round(seating.x)}, ${Math.round(seating.y)}`;
-        document.getElementById( 'selected-size' ).textContent = `${seating.width} × ${seating.height}`;
-        
-        const colorBox = document.getElementById( 'selected-color-box' );
-        colorBox.style.backgroundColor = seating.color || '#3498db';
-        document.getElementById( 'selected-color-code' ).textContent = seating.color || '#3498db';
+        // Multi-select durumu
+        if ( visualEditor.selectedSeatings && visualEditor.selectedSeatings.length > 1 ) {
+            document.getElementById( 'selected-name' ).textContent = `${visualEditor.selectedSeatings.length} Oturum`;
+            document.getElementById( 'selected-type' ).textContent = 'Çoklu Seçim';
+            
+            const totalCapacity = visualEditor.selectedSeatings.reduce( ( sum, s ) => sum + ( s.capacity || 0 ), 0 );
+            document.getElementById( 'selected-capacity' ).textContent = totalCapacity;
+            
+            document.getElementById( 'selected-position' ).textContent = '-';
+            document.getElementById( 'selected-size' ).textContent = '-';
+            
+            const colorBox = document.getElementById( 'selected-color-box' );
+            colorBox.style.background = 'linear-gradient(45deg, #3498db, #9b59b6)';
+            document.getElementById( 'selected-color-code' ).textContent = 'Çoklu';
+        } else {
+            // Single select
+            const seating = visualEditor.selectedSeating;
+            document.getElementById( 'selected-name' ).textContent = seating.name || '-';
+            document.getElementById( 'selected-type' ).textContent = seating.type || '-';
+            document.getElementById( 'selected-capacity' ).textContent = seating.capacity || '-';
+            document.getElementById( 'selected-position' ).textContent = `${Math.round(seating.x)}, ${Math.round(seating.y)}`;
+            document.getElementById( 'selected-size' ).textContent = `${seating.width} × ${seating.height}`;
+            
+            const colorBox = document.getElementById( 'selected-color-box' );
+            colorBox.style.background = seating.color || '#3498db';
+            document.getElementById( 'selected-color-code' ).textContent = seating.color || '#3498db';
+        }
     }
 
     // Seçili oturumu düzenle
     function editSelectedSeating() {
         if ( !visualEditor || !visualEditor.selectedSeating ) {
             showNotification( 'Önce bir oturum seçin', 'info' );
+            return;
+        }
+
+        if ( visualEditor.selectedSeatings && visualEditor.selectedSeatings.length > 1 ) {
+            showNotification( 'Çoklu düzenleme için tek oturum seçin', 'info' );
             return;
         }
 
@@ -1625,24 +1693,37 @@
 
     // Seçili oturumu sil
     function deleteSelectedSeating() {
-        if ( !visualEditor || !visualEditor.selectedSeating ) {
+        if ( !visualEditor || ( !visualEditor.selectedSeating && ( !visualEditor.selectedSeatings || visualEditor.selectedSeatings.length === 0 ) ) ) {
             showNotification( 'Önce bir oturum seçin', 'info' );
             return;
         }
 
-        if ( !confirm( 'Bu oturumu silmek istediğinizden emin misiniz?' ) ) {
+        const count = ( visualEditor.selectedSeatings && visualEditor.selectedSeatings.length ) || 1;
+        const message = count > 1 
+            ? `${count} oturumu silmek istediğinizden emin misiniz?`
+            : 'Bu oturumu silmek istediğinizden emin misiniz?';
+
+        if ( !confirm( message ) ) {
             return;
         }
 
-        const index = visualEditor.seatings.indexOf( visualEditor.selectedSeating );
-        if ( index > -1 ) {
-            visualEditor.seatings.splice( index, 1 );
-            visualEditor.selectedSeating = null;
-            visualEditor.draw();
-            updateCapacityInfo();
-            updateSelectedSeatingInfo();
-            showNotification( 'Oturum silindi', 'success' );
+        if ( visualEditor.selectedSeatings && visualEditor.selectedSeatings.length > 1 ) {
+            visualEditor.deleteSelection();
+        } else {
+            const index = visualEditor.seatings.indexOf( visualEditor.selectedSeating );
+            if ( index > -1 ) {
+                visualEditor.seatings.splice( index, 1 );
+                visualEditor.selectedSeating = null;
+                visualEditor.selectedSeatings = [];
+                visualEditor.hasUnsavedChanges = true;
+                visualEditor.saveState();
+                visualEditor.draw();
+            }
         }
+        
+        updateCapacityInfo();
+        updateSelectedSeatingInfo();
+        showNotification( count > 1 ? `${count} oturum silindi` : 'Oturum silindi', 'success' );
     }
 
     // Modal fonksiyonları
@@ -1844,6 +1925,47 @@
         }
     }, { passive: true } );
 
+    // Toggle snap settings
+    function toggleSnapToGrid( enabled ) {
+        if ( visualEditor ) {
+            visualEditor.snapToGrid = enabled;
+            console.log( '🧲 Snap to grid:', enabled );
+        }
+    }
+
+    function toggleSnapToObjects( enabled ) {
+        if ( visualEditor ) {
+            visualEditor.snapToObjects = enabled;
+            console.log( '🧲 Snap to objects:', enabled );
+        }
+    }
+
+    function toggleAlignmentGuides( enabled ) {
+        if ( visualEditor ) {
+            visualEditor.showAlignmentGuides = enabled;
+            console.log( '📏 Alignment guides:', enabled );
+        }
+    }
+
+    // Auto-save listener
+    document.addEventListener( 'visualeditor:autosave', function ( e ) {
+        console.log( '💾 Auto-save triggered' );
+        const config = e.detail.configuration;
+        
+        // Show subtle notification
+        const notification = document.createElement( 'div' );
+        notification.className = 'fixed bottom-4 right-4 z-50 px-4 py-2 rounded-lg shadow-lg bg-green-500 text-white text-sm flex items-center gap-2';
+        notification.innerHTML = '<i class="fas fa-check-circle"></i> Otomatik kaydedildi';
+        document.body.appendChild( notification );
+        
+        setTimeout( () => {
+            notification.remove();
+        }, 2000 );
+        
+        // Optionally save to backend
+        // saveLayout();
+    } );
+
     // Initialize undo/redo buttons when editor is ready
     document.addEventListener( 'DOMContentLoaded', function () {
         setTimeout( function() {
@@ -1855,6 +1977,13 @@
                     setTimeout( updateSelectedSeatingInfo, 100 );
                 } );
             }
+            
+            // Update selection info on multi-select
+            document.addEventListener( 'keydown', function ( e ) {
+                if ( e.key === 'Shift' || e.key === 'Control' || e.key === 'Meta' ) {
+                    setTimeout( updateSelectedSeatingInfo, 100 );
+                }
+            } );
         }, 1000 ); // Wait for editor to initialize
     } );
 </script>

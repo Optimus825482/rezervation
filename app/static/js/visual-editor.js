@@ -19,12 +19,42 @@ class VisualSeatingEditor {
         this.stage = null;
         this.seatings = [];
         this.selectedSeating = null;
+        this.selectedSeatings = []; // Multi-select support
         this.isDragging = false;
         this.dragOffset = { x: 0, y: 0 };
         this.zoom = 1;
         this.pan = { x: 0, y: 0 };
         this.gridVisible = true; // Grid visibility toggle
         this.showCollisionWarning = false; // Collision warning flag
+        
+        // Resize
+        this.isResizing = false;
+        this.resizeHandle = null;
+        this.resizeStart = null;
+        this.resizeOriginal = null;
+        
+        // Lasso selection
+        this.isLassoSelecting = false;
+        this.lassoStart = null;
+        this.lassoEnd = null;
+        
+        // Alignment guides
+        this.showAlignmentGuides = true;
+        this.alignmentGuides = [];
+        
+        // Snap settings
+        this.snapToGrid = true;
+        this.snapToObjects = true;
+        this.snapDistance = 10;
+        
+        // Clipboard
+        this.clipboard = [];
+        
+        // Auto-save
+        this.autoSaveEnabled = true;
+        this.autoSaveInterval = 30000; // 30 seconds
+        this.lastSaveTime = Date.now();
+        this.hasUnsavedChanges = false;
         
         // Undo/Redo system
         this.history = [];
@@ -40,6 +70,7 @@ class VisualSeatingEditor {
         this.createStage();
         this.setupEventListeners();
         this.setupKeyboardNavigation();
+        this.setupAutoSave();
         this.draw();
     }
     
@@ -314,14 +345,70 @@ class VisualSeatingEditor {
         const x = e.clientX - rect.left;
         const y = e.clientY - rect.top;
         
-        const seating = this.getSeatingAt(x, y);
-        if (seating) {
-            this.selectedSeating = seating;
-            this.isDragging = true;
-            this.dragOffset = {
-                x: x - seating.x,
-                y: y - seating.y
+        // Check if clicking on resize handle
+        const handle = this.getHandleAt(x, y);
+        if (handle && this.selectedSeating) {
+            this.isResizing = true;
+            this.resizeHandle = handle;
+            this.resizeStart = { x, y };
+            this.resizeOriginal = {
+                x: this.selectedSeating.x,
+                y: this.selectedSeating.y,
+                width: this.selectedSeating.width,
+                height: this.selectedSeating.height
             };
+            return;
+        }
+        
+        const seating = this.getSeatingAt(x, y);
+        
+        // Shift key for multi-select
+        if (e.shiftKey && seating) {
+            if (this.selectedSeatings.includes(seating)) {
+                // Remove from selection
+                this.selectedSeatings = this.selectedSeatings.filter(s => s !== seating);
+            } else {
+                // Add to selection
+                this.selectedSeatings.push(seating);
+            }
+            this.selectedSeating = seating;
+            this.draw();
+            return;
+        }
+        
+        // Ctrl/Cmd key for lasso selection
+        if ((e.ctrlKey || e.metaKey) && !seating) {
+            this.isLassoSelecting = true;
+            this.lassoStart = { x, y };
+            this.lassoEnd = { x, y };
+            this.draw();
+            return;
+        }
+        
+        if (seating) {
+            // If clicking on already selected seating in multi-select, start dragging all
+            if (this.selectedSeatings.includes(seating)) {
+                this.selectedSeating = seating;
+                this.isDragging = true;
+                this.dragOffset = {
+                    x: x - seating.x,
+                    y: y - seating.y
+                };
+            } else {
+                // Single select
+                this.selectedSeating = seating;
+                this.selectedSeatings = [seating];
+                this.isDragging = true;
+                this.dragOffset = {
+                    x: x - seating.x,
+                    y: y - seating.y
+                };
+            }
+            this.draw();
+        } else {
+            // Click on empty space - clear selection (lasso only with Ctrl/Cmd)
+            this.selectedSeating = null;
+            this.selectedSeatings = [];
             this.draw();
         }
     }
@@ -330,6 +417,14 @@ class VisualSeatingEditor {
         const rect = this.canvas.getBoundingClientRect();
         const x = e.clientX - rect.left;
         const y = e.clientY - rect.top;
+        
+        // Lasso selection
+        if (this.isLassoSelecting) {
+            this.lassoEnd = { x, y };
+            this.updateLassoSelection();
+            this.draw();
+            return;
+        }
         
         // Update cursor based on position
         if (!this.isDragging) {
@@ -341,30 +436,65 @@ class VisualSeatingEditor {
             let newX = x - this.dragOffset.x;
             let newY = y - this.dragOffset.y;
             
+            // Calculate delta for multi-select
+            const deltaX = newX - this.selectedSeating.x;
+            const deltaY = newY - this.selectedSeating.y;
+            
             // Grid snap
-            newX = Math.round(newX / this.config.gridSize) * this.config.gridSize;
-            newY = Math.round(newY / this.config.gridSize) * this.config.gridSize;
+            if (this.snapToGrid) {
+                newX = Math.round(newX / this.config.gridSize) * this.config.gridSize;
+                newY = Math.round(newY / this.config.gridSize) * this.config.gridSize;
+            }
+            
+            // Object snap - check alignment with other objects
+            if (this.snapToObjects && this.selectedSeatings.length === 1) {
+                const snapResult = this.getSnapPosition(this.selectedSeating, newX, newY);
+                newX = snapResult.x;
+                newY = snapResult.y;
+                this.alignmentGuides = snapResult.guides;
+            } else {
+                this.alignmentGuides = [];
+            }
             
             // Boundary check - keep within canvas
             newX = Math.max(0, Math.min(newX, this.config.width - this.selectedSeating.width));
             newY = Math.max(0, Math.min(newY, this.config.height - this.selectedSeating.height));
             
-            // Store old position for collision check
-            const oldX = this.selectedSeating.x;
-            const oldY = this.selectedSeating.y;
+            // Store old positions for collision check
+            const oldPositions = this.selectedSeatings.map(s => ({ seating: s, x: s.x, y: s.y }));
             
-            // Try new position
-            this.selectedSeating.x = newX;
-            this.selectedSeating.y = newY;
+            // Move all selected seatings
+            if (this.selectedSeatings.length > 1) {
+                const actualDeltaX = newX - this.selectedSeating.x;
+                const actualDeltaY = newY - this.selectedSeating.y;
+                
+                this.selectedSeatings.forEach(seating => {
+                    seating.x += actualDeltaX;
+                    seating.y += actualDeltaY;
+                });
+            } else {
+                this.selectedSeating.x = newX;
+                this.selectedSeating.y = newY;
+            }
             
             // Check for collisions
-            const collisions = this.checkCollisions(this.selectedSeating);
-            if (collisions.length > 0) {
-                // Revert to old position if collision detected
-                this.selectedSeating.x = oldX;
-                this.selectedSeating.y = oldY;
+            let hasCollision = false;
+            for (let seating of this.selectedSeatings) {
+                const collisions = this.checkCollisions(seating);
+                if (collisions.length > 0) {
+                    hasCollision = true;
+                    break;
+                }
+            }
+            
+            if (hasCollision) {
+                // Revert all positions
+                oldPositions.forEach(({ seating, x, y }) => {
+                    seating.x = x;
+                    seating.y = y;
+                });
                 
-                // Visual feedback - flash red border
+                // Visual feedback
                 this.showCollisionWarning = true;
                 setTimeout(() => {
                     this.showCollisionWarning = false;
@@ -379,7 +509,16 @@ class VisualSeatingEditor {
     onMouseUp() {
         if (this.isDragging) {
             this.isDragging = false;
+            this.alignmentGuides = [];
+            this.hasUnsavedChanges = true;
             this.saveState(); // Save state after drag operation
+        }
+        
+        if (this.isLassoSelecting) {
+            this.isLassoSelecting = false;
+            this.lassoStart = null;
+            this.lassoEnd = null;
+            this.draw();
         }
     }
     
@@ -784,21 +923,103 @@ class VisualSeatingEditor {
     draw() {
         this.ctx.clearRect(0, 0, this.config.width, this.config.height);
         
+        // Draw alignment guides
+        if (this.showAlignmentGuides && this.alignmentGuides.length > 0) {
+            this.drawAlignmentGuides();
+        }
+        
+        // Draw lasso selection
+        if (this.isLassoSelecting && this.lassoStart && this.lassoEnd) {
+            this.drawLasso();
+        }
+        
         // Draw seatings
         this.seatings.forEach(seating => {
-            this.drawSeating(seating);
+            const isSelected = this.selectedSeatings.includes(seating);
+            this.drawSeating(seating, isSelected);
         });
         
-        // Draw selection highlight
-        if (this.selectedSeating) {
+        // Draw multi-selection highlight
+        if (this.selectedSeatings.length > 1) {
+            this.drawMultiSelection();
+        } else if (this.selectedSeating) {
+            // Draw single selection highlight
             this.drawSelection(this.selectedSeating);
         }
     }
     
-    drawSeating(seating) {
-        this.ctx.fillStyle = seating.color;
-        this.ctx.strokeStyle = '#2c3e50';
+    // Draw alignment guides
+    drawAlignmentGuides() {
+        this.ctx.strokeStyle = '#e74c3c';
+        this.ctx.lineWidth = 1;
+        this.ctx.setLineDash([5, 5]);
+        
+        this.alignmentGuides.forEach(guide => {
+            this.ctx.beginPath();
+            if (guide.type === 'vertical') {
+                this.ctx.moveTo(guide.x, guide.y1);
+                this.ctx.lineTo(guide.x, guide.y2);
+            } else {
+                this.ctx.moveTo(guide.x1, guide.y);
+                this.ctx.lineTo(guide.x2, guide.y);
+            }
+            this.ctx.stroke();
+        });
+        
+        this.ctx.setLineDash([]);
+    }
+    
+    // Draw lasso selection
+    drawLasso() {
+        const minX = Math.min(this.lassoStart.x, this.lassoEnd.x);
+        const maxX = Math.max(this.lassoStart.x, this.lassoEnd.x);
+        const minY = Math.min(this.lassoStart.y, this.lassoEnd.y);
+        const maxY = Math.max(this.lassoStart.y, this.lassoEnd.y);
+        
+        this.ctx.strokeStyle = '#3498db';
+        this.ctx.fillStyle = 'rgba(52, 152, 219, 0.1)';
         this.ctx.lineWidth = 2;
+        this.ctx.setLineDash([5, 5]);
+        
+        this.ctx.fillRect(minX, minY, maxX - minX, maxY - minY);
+        this.ctx.strokeRect(minX, minY, maxX - minX, maxY - minY);
+        
+        this.ctx.setLineDash([]);
+    }
+    
+    // Draw multi-selection highlight
+    drawMultiSelection() {
+        // Calculate bounding box
+        let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+        
+        this.selectedSeatings.forEach(seating => {
+            minX = Math.min(minX, seating.x);
+            minY = Math.min(minY, seating.y);
+            maxX = Math.max(maxX, seating.x + seating.width);
+            maxY = Math.max(maxY, seating.y + seating.height);
+        });
+        
+        // Draw bounding box
+        this.ctx.strokeStyle = '#3498db';
+        this.ctx.lineWidth = 2;
+        this.ctx.setLineDash([5, 5]);
+        this.ctx.strokeRect(minX - 5, minY - 5, maxX - minX + 10, maxY - minY + 10);
+        this.ctx.setLineDash([]);
+        
+        // Draw count badge
+        this.ctx.fillStyle = '#3498db';
+        this.ctx.fillRect(maxX - 30, minY - 25, 35, 20);
+        this.ctx.fillStyle = 'white';
+        this.ctx.font = 'bold 12px Arial';
+        this.ctx.textAlign = 'center';
+        this.ctx.textBaseline = 'middle';
+        this.ctx.fillText(`${this.selectedSeatings.length}×`, maxX - 12, minY - 15);
+    }
+    
+    drawSeating(seating, isSelected = false) {
+        this.ctx.fillStyle = seating.color;
+        this.ctx.strokeStyle = isSelected ? '#3498db' : '#2c3e50';
+        this.ctx.lineWidth = isSelected ? 3 : 2;
         
         // Seating rectangle
         this.ctx.fillRect(seating.x, seating.y, seating.width, seating.height);
@@ -1028,49 +1249,220 @@ class VisualSeatingEditor {
         seating.y = Math.max(0, Math.min(seating.y, this.config.height - seating.height));
     }
     
+    // Get snap position with alignment guides
+    getSnapPosition(seating, newX, newY) {
+        const guides = [];
+        let snapX = newX;
+        let snapY = newY;
+        
+        // Check alignment with other seatings
+        for (let other of this.seatings) {
+            if (other === seating) continue;
+            
+            // Left edge alignment
+            if (Math.abs(newX - other.x) < this.snapDistance) {
+                snapX = other.x;
+                guides.push({ type: 'vertical', x: other.x, y1: Math.min(newY, other.y), y2: Math.max(newY + seating.height, other.y + other.height) });
+            }
+            
+            // Right edge alignment
+            if (Math.abs((newX + seating.width) - (other.x + other.width)) < this.snapDistance) {
+                snapX = other.x + other.width - seating.width;
+                guides.push({ type: 'vertical', x: other.x + other.width, y1: Math.min(newY, other.y), y2: Math.max(newY + seating.height, other.y + other.height) });
+            }
+            
+            // Center horizontal alignment
+            const centerX = newX + seating.width / 2;
+            const otherCenterX = other.x + other.width / 2;
+            if (Math.abs(centerX - otherCenterX) < this.snapDistance) {
+                snapX = otherCenterX - seating.width / 2;
+                guides.push({ type: 'vertical', x: otherCenterX, y1: Math.min(newY, other.y), y2: Math.max(newY + seating.height, other.y + other.height) });
+            }
+            
+            // Top edge alignment
+            if (Math.abs(newY - other.y) < this.snapDistance) {
+                snapY = other.y;
+                guides.push({ type: 'horizontal', y: other.y, x1: Math.min(newX, other.x), x2: Math.max(newX + seating.width, other.x + other.width) });
+            }
+            
+            // Bottom edge alignment
+            if (Math.abs((newY + seating.height) - (other.y + other.height)) < this.snapDistance) {
+                snapY = other.y + other.height - seating.height;
+                guides.push({ type: 'horizontal', y: other.y + other.height, x1: Math.min(newX, other.x), x2: Math.max(newX + seating.width, other.x + other.width) });
+            }
+            
+            // Center vertical alignment
+            const centerY = newY + seating.height / 2;
+            const otherCenterY = other.y + other.height / 2;
+            if (Math.abs(centerY - otherCenterY) < this.snapDistance) {
+                snapY = otherCenterY - seating.height / 2;
+                guides.push({ type: 'horizontal', y: otherCenterY, x1: Math.min(newX, other.x), x2: Math.max(newX + seating.width, other.x + other.width) });
+            }
+        }
+        
+        return { x: snapX, y: snapY, guides };
+    }
+    
+    // Update lasso selection
+    updateLassoSelection() {
+        if (!this.lassoStart || !this.lassoEnd) return;
+        
+        const minX = Math.min(this.lassoStart.x, this.lassoEnd.x);
+        const maxX = Math.max(this.lassoStart.x, this.lassoEnd.x);
+        const minY = Math.min(this.lassoStart.y, this.lassoEnd.y);
+        const maxY = Math.max(this.lassoStart.y, this.lassoEnd.y);
+        
+        this.selectedSeatings = this.seatings.filter(seating => {
+            return seating.x + seating.width > minX &&
+                   seating.x < maxX &&
+                   seating.y + seating.height > minY &&
+                   seating.y < maxY;
+        });
+        
+        if (this.selectedSeatings.length > 0) {
+            this.selectedSeating = this.selectedSeatings[0];
+        }
+    }
+    
+    // Copy selected seatings
+    copySelection() {
+        if (this.selectedSeatings.length === 0) return;
+        
+        this.clipboard = this.selectedSeatings.map(s => ({
+            type: s.type,
+            width: s.width,
+            height: s.height,
+            capacity: s.capacity,
+            name: s.name,
+            color: s.color,
+            icon: s.icon
+        }));
+        
+        console.log('📋 Copied', this.clipboard.length, 'seatings');
+    }
+    
+    // Paste seatings from clipboard
+    pasteSelection() {
+        if (this.clipboard.length === 0) return;
+        
+        console.log('📋 Pasting', this.clipboard.length, 'seatings');
+        
+        const offset = 20;
+        const newSeatings = [];
+        
+        this.clipboard.forEach(data => {
+            const position = {
+                x: (this.selectedSeating?.x || 100) + offset,
+                y: (this.selectedSeating?.y || 100) + offset
+            };
+            
+            const seating = this.addSeating(data.type, position, {
+                ...data,
+                name: `${data.name} (Kopya)`
+            });
+            
+            if (seating) {
+                newSeatings.push(seating);
+            }
+        });
+        
+        // Select pasted seatings
+        this.selectedSeatings = newSeatings;
+        this.selectedSeating = newSeatings[0];
+        this.draw();
+    }
+    
+    // Auto-save setup
+    setupAutoSave() {
+        if (!this.autoSaveEnabled) return;
+        
+        setInterval(() => {
+            if (this.hasUnsavedChanges && Date.now() - this.lastSaveTime > this.autoSaveInterval) {
+                console.log('💾 Auto-saving...');
+                this.triggerAutoSave();
+            }
+        }, 5000); // Check every 5 seconds
+    }
+    
+    // Trigger auto-save event
+    triggerAutoSave() {
+        const event = new CustomEvent('visualeditor:autosave', {
+            detail: { configuration: this.getConfiguration() }
+        });
+        document.dispatchEvent(event);
+        this.hasUnsavedChanges = false;
+        this.lastSaveTime = Date.now();
+    }
+    
     // Keyboard navigation
     setupKeyboardNavigation() {
         document.addEventListener('keydown', (e) => {
-            if (!this.selectedSeating) return;
+            // Global shortcuts (work without selection)
+            if (e.ctrlKey || e.metaKey) {
+                switch(e.key.toLowerCase()) {
+                    case 'a':
+                        e.preventDefault();
+                        this.selectAll();
+                        return;
+                    case 'c':
+                        e.preventDefault();
+                        this.copySelection();
+                        return;
+                    case 'v':
+                        e.preventDefault();
+                        this.pasteSelection();
+                        return;
+                    case 'x':
+                        e.preventDefault();
+                        this.cutSelection();
+                        return;
+                    case 'g':
+                        e.preventDefault();
+                        this.groupSelection();
+                        return;
+                }
+            }
+            
+            if (!this.selectedSeating && this.selectedSeatings.length === 0) return;
             
             const step = e.shiftKey ? this.config.gridSize : 1;
             let moved = false;
             
-            // Store old position for collision check
-            const oldX = this.selectedSeating.x;
-            const oldY = this.selectedSeating.y;
+            // Store old positions for collision check
+            const oldPositions = this.selectedSeatings.map(s => ({ seating: s, x: s.x, y: s.y }));
             
             switch(e.key) {
                 case 'ArrowUp':
-                    this.selectedSeating.y -= step;
+                    this.selectedSeatings.forEach(s => s.y -= step);
                     moved = true;
                     break;
                 case 'ArrowDown':
-                    this.selectedSeating.y += step;
+                    this.selectedSeatings.forEach(s => s.y += step);
                     moved = true;
                     break;
                 case 'ArrowLeft':
-                    this.selectedSeating.x -= step;
+                    this.selectedSeatings.forEach(s => s.x -= step);
                     moved = true;
                     break;
                 case 'ArrowRight':
-                    this.selectedSeating.x += step;
+                    this.selectedSeatings.forEach(s => s.x += step);
                     moved = true;
                     break;
                 case 'Delete':
                 case 'Backspace':
                     e.preventDefault();
-                    this.deleteSeating(this.selectedSeating);
+                    this.deleteSelection();
                     return;
                 case 'Escape':
                     this.selectedSeating = null;
+                    this.selectedSeatings = [];
                     this.draw();
                     return;
                 case 'd':
                 case 'D':
                     if (e.ctrlKey || e.metaKey) {
                         e.preventDefault();
-                        this.duplicateSeating(this.selectedSeating);
+                        this.duplicateSelection();
                         return;
                     }
                     break;
@@ -1078,21 +1470,97 @@ class VisualSeatingEditor {
             
             if (moved) {
                 e.preventDefault();
-                this.snapToGrid(this.selectedSeating);
+                
+                // Snap all to grid
+                this.selectedSeatings.forEach(s => this.snapToGrid(s));
                 
                 // Check for collisions after move
-                const collisions = this.checkCollisions(this.selectedSeating);
-                if (collisions.length > 0) {
-                    // Revert to old position
-                    this.selectedSeating.x = oldX;
-                    this.selectedSeating.y = oldY;
+                let hasCollision = false;
+                for (let seating of this.selectedSeatings) {
+                    const collisions = this.checkCollisions(seating);
+                    if (collisions.length > 0) {
+                        hasCollision = true;
+                        break;
+                    }
+                }
+                
+                if (hasCollision) {
+                    // Revert all positions
+                    oldPositions.forEach(({ seating, x, y }) => {
+                        seating.x = x;
+                        seating.y = y;
+                    });
                 } else {
+                    this.hasUnsavedChanges = true;
                     this.saveState();
                 }
                 
                 this.draw();
             }
         });
+    }
+    
+    // Select all seatings
+    selectAll() {
+        this.selectedSeatings = [...this.seatings];
+        this.selectedSeating = this.seatings[0];
+        this.draw();
+        console.log('✅ Selected all', this.selectedSeatings.length, 'seatings');
+    }
+    
+    // Delete selected seatings
+    deleteSelection() {
+        if (this.selectedSeatings.length === 0) return;
+        
+        const count = this.selectedSeatings.length;
+        this.selectedSeatings.forEach(seating => {
+            const index = this.seatings.indexOf(seating);
+            if (index > -1) {
+                this.seatings.splice(index, 1);
+            }
+        });
+        
+        this.selectedSeating = null;
+        this.selectedSeatings = [];
+        this.hasUnsavedChanges = true;
+        this.saveState();
+        this.draw();
+        
+        console.log('🗑️ Deleted', count, 'seatings');
+    }
+    
+    // Duplicate selected seatings
+    duplicateSelection() {
+        if (this.selectedSeatings.length === 0) return;
+        
+        const newSeatings = [];
+        this.selectedSeatings.forEach(seating => {
+            const duplicated = this.duplicateSeating(seating);
+            if (duplicated) {
+                newSeatings.push(duplicated);
+            }
+        });
+        
+        this.selectedSeatings = newSeatings;
+        this.selectedSeating = newSeatings[0];
+        this.draw();
+    }
+    
+    // Cut selection
+    cutSelection() {
+        this.copySelection();
+        this.deleteSelection();
+    }
+    
+    // Group selection (placeholder for future feature)
+    groupSelection() {
+        if (this.selectedSeatings.length < 2) {
+            console.log('⚠️ En az 2 oturum seçmelisiniz');
+            return;
+        }
+        
+        console.log('📦 Gruplama özelliği yakında eklenecek');
+        // TODO: Implement grouping
     }
     
     duplicateSeating(seating) {
