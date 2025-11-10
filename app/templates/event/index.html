@@ -284,9 +284,11 @@
                         </form>
                         {% endif %}
                         
-                        <a href="{{ url_for('reservation.index') }}" class="btn-shadcn btn-shadcn-ghost btn-shadcn-sm">
-                            <i class="fas fa-list"></i>
-                            <span>Rezervasyonlar</span>
+                        <a href="{{ url_for('reservation.create', event_id=event.id) }}" 
+                           class="btn-shadcn btn-shadcn-default btn-shadcn-sm"
+                           title="Görsel Rezervasyon">
+                            <i class="fas fa-plus-circle"></i>
+                            <span>Rezervasyon</span>
                         </a>
                     </div>
                 </div>

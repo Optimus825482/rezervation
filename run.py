@@ -51,7 +51,7 @@ else:
 
 if __name__ == '__main__':
     # Get port from environment (Railway sets PORT)
-    port = int(os.environ.get('PORT', 5000))
+    port = int(os.environ.get('PORT', 5023))
     debug = env == 'development'
     
     print(f"🚀 Starting Flask app on port {port} (env: {env}, debug: {debug})")

@@ -1,1990 +1,757 @@
 {% extends "base.html" %}
-{% block title %}Etkinlik Düzenle{% endblock %}
+{% block title %}Etkinlik Düzenle: {{ event.name }}{% endblock %}
+
+{% block extra_css %}
+<style>
+    .setup-wizard {
+        display: none;
+    }
+
+    .setup-wizard.active {
+        display: block;
+    }
+
+    #seating-canvas {
+        position: relative;
+        margin: 0 auto;
+        cursor: crosshair;
+        border-radius: 1rem;
+        border: 2px dashed hsl(var(--border));
+        background: hsl(var(--card));
+        box-shadow: inset 0 1px 6px rgba(15, 23, 42, 0.08);
+    }
+
+    #seating-canvas.grid-enabled {
+        background-image:
+            repeating-linear-gradient(0deg, transparent, transparent 49px, rgba(148, 163, 184, 0.15) 49px, rgba(148, 163, 184, 0.25) 50px),
+            repeating-linear-gradient(90deg, transparent, transparent 49px, rgba(148, 163, 184, 0.15) 49px, rgba(148, 163, 184, 0.25) 50px);
+        background-size: 50px 50px;
+    }
+
+    .seat {
+        position: absolute;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: move;
+        color: #fff;
+        font-weight: 600;
+        font-size: 12px;
+        user-select: none;
+        border: 2px solid rgba(15, 23, 42, 0.15);
+        box-shadow: 0 6px 12px rgba(15, 23, 42, 0.15);
+        transition: transform 0.15s ease, box-shadow 0.15s ease;
+    }
+
+    .seat.table {
+        border-radius: 0.75rem;
+    }
+
+    .seat.chair {
+        border-radius: 999px;
+        width: 35px;
+        height: 35px;
+    }
+
+    .seat.selected {
+        border: 3px solid hsl(var(--primary));
+        box-shadow: 0 0 0 4px hsl(var(--primary) / 0.15);
+        transform: scale(1.05);
+    }
+
+    .stage {
+        position: absolute;
+        background: linear-gradient(135deg, rgba(15, 23, 42, 0.95) 0%, rgba(30, 41, 59, 0.9) 100%);
+        color: #fff;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.75rem;
+        font-weight: 700;
+        cursor: move;
+        border: 3px solid rgba(148, 163, 184, 0.2);
+        box-shadow: 0 12px 25px rgba(15, 23, 42, 0.35);
+        font-size: 18px;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        border-radius: 0.75rem;
+    }
+
+    .stage.placing {
+        opacity: 0.75;
+        cursor: crosshair;
+    }
+
+    .resize-handle {
+        position: absolute;
+        width: 12px;
+        height: 12px;
+        background: hsl(var(--primary));
+        border: 2px solid #fff;
+        border-radius: 999px;
+        box-shadow: 0 2px 6px rgba(15, 23, 42, 0.2);
+    }
+
+    .resize-handle.se {
+        bottom: -6px;
+        right: -6px;
+        cursor: se-resize;
+    }
+
+    .step-indicator {
+        display: grid;
+        gap: 1rem;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    }
+
+    .step {
+        position: relative;
+        border-radius: 1rem;
+        padding: 1rem 1.25rem;
+        background: hsl(var(--muted));
+        color: hsl(var(--muted-foreground));
+        border: 1px solid hsl(var(--border));
+        transition: all 0.2s ease;
+    }
+
+    .step strong {
+        display: block;
+        font-size: 0.95rem;
+        margin-bottom: 0.4rem;
+        color: hsl(var(--foreground));
+    }
+
+    .step.active {
+        background: linear-gradient(135deg, hsl(var(--primary)) 0%, hsl(var(--accent)) 100%);
+        color: hsl(var(--primary-foreground));
+        border-color: transparent;
+        box-shadow: 0 12px 30px rgba(255, 107, 53, 0.28);
+    }
+
+    .step.completed {
+        background: rgba(34, 197, 94, 0.12);
+        color: rgb(21, 128, 61);
+        border-color: rgba(34, 197, 94, 0.3);
+        box-shadow: 0 10px 25px rgba(21, 128, 61, 0.18);
+    }
+
+    .step::after {
+        content: '';
+        position: absolute;
+        inset-inline-end: 15px;
+        inset-block-end: 12px;
+        width: 36px;
+        height: 36px;
+        background: rgba(255, 255, 255, 0.12);
+        border-radius: 999px;
+        z-index: 0;
+    }
+
+    .step.active::after {
+        background: rgba(255, 255, 255, 0.2);
+    }
+
+    .step.completed::after {
+        background: rgba(34, 197, 94, 0.2);
+    }
+
+    .step:last-child::after {
+        display: none;
+    }
+</style>
+{% endblock %}
 
 {% block content %}
-<div class="mx-auto max-w-5xl space-y-6">
+<div class="space-y-6">
     <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
         <div class="space-y-1">
-            <p class="text-xs uppercase tracking-[0.3em] text-slate-400 dark:text-slate-600">Düzenle</p>
-            <h1 class="text-3xl font-bold text-slate-900 dark:text-white">Etkinlik Düzenle</h1>
-            <p class="text-sm text-slate-600 dark:text-slate-400">Etkinlik bilgilerini güncelle ve koltuk düzenini
-                yeniden planla.</p>
+            <p class="text-xs uppercase tracking-[0.3em] text-slate-400 dark:text-slate-600">Etkinlik düzenleme</p>
+            <h1 class="text-3xl font-bold text-slate-900 dark:text-white">{{ event.name|safe_text }}</h1>
+            <p class="text-sm text-slate-600 dark:text-slate-400">Sahne, alan ve oturma düzenini sürükle-bırak ile
+                oluştur.</p>
         </div>
         <div class="flex flex-wrap items-center gap-2">
             <a href="{{ url_for('event.index') }}" class="btn-shadcn btn-shadcn-ghost btn-shadcn-sm">
                 <i class="fas fa-arrow-left"></i>
-                <span>Geri Dön</span>
+                <span>Etkinlik listesi</span>
             </a>
-            <a href="{{ url_for('template.seating_templates') }}" class="btn-shadcn btn-shadcn-outline btn-shadcn-sm">
-                <i class="fas fa-layer-group"></i>
-                <span>Şablonlar</span>
+            <a href="{{ url_for('reservation.index') }}" class="btn-shadcn btn-shadcn-outline btn-shadcn-sm">
+                <i class="fas fa-ticket-alt"></i>
+                <span>Rezervasyonlar</span>
             </a>
         </div>
     </div>
 
-    <div class="grid gap-6 lg:grid-cols-[2fr,1fr]">
-        <form method="POST" action="{{ url_for('event.edit', event_id=event.id) }}" class="space-y-6 order-2 lg:order-1"></form>
-            <!-- Temel Bilgiler -->
-            <section class="card-shadcn">
-                <div class="card-shadcn-header pb-4">
-                    <div class="flex items-center gap-3">
-                        <span
-                            class="inline-flex h-11 w-11 items-center justify-center rounded-xl bg-primary/10 text-primary">
-                            <i class="fas fa-calendar-edit"></i>
-                        </span>
-                        <div>
-                            <h2 class="card-shadcn-title text-xl">Temel Bilgiler</h2>
-                            <p class="card-shadcn-description">Etkinliğin adı, tarihi, türü ve mekan bilgilerini
-                                güncelle.</p>
-                        </div>
-                    </div>
+    <div class="card-shadcn">
+        <div class="card-shadcn-content">
+            <div class="step-indicator">
+                <div class="step active" id="step-1-indicator">
+                    <strong>1. Sahne Yerleşimi</strong>
+                    <span class="text-sm">Sahnenin boyut ve konumunu belirle</span>
                 </div>
-                <div class="card-shadcn-content">
-                    <div class="grid gap-5 md:grid-cols-2">
-                        <label class="md:col-span-2 space-y-2">
-                            <span
-                                class="label-shadcn flex items-center gap-2 text-sm font-medium text-slate-700 dark:text-slate-200">
-                                <i class="fas fa-signature text-primary"></i>
-                                Etkinlik Adı
-                            </span>
-                            <input type="text" class="input-shadcn" name="name" value="{{ event.name or '' }}"
-                                placeholder="Örn: 2025 Lansman Gecesi" autocomplete="off" required>
-                        </label>
-
-                        <label class="md:col-span-2 space-y-2">
-                            <span
-                                class="label-shadcn flex items-center gap-2 text-sm font-medium text-slate-700 dark:text-slate-200">
-                                <i class="fas fa-align-left text-primary"></i>
-                                Açıklama
-                            </span>
-                            <textarea class="input-shadcn min-h-[100px] resize-none" name="description"
-                                placeholder="Etkinlik hakkında detaylı bilgi...">{{ event.description or '' }}</textarea>
-                        </label>
-
-                        <label class="space-y-2">
-                            <span
-                                class="label-shadcn flex items-center gap-2 text-sm font-medium text-slate-700 dark:text-slate-200">
-                                <i class="far fa-calendar text-primary"></i>
-                                Etkinlik Tarihi
-                            </span>
-                            <input type="date" class="input-shadcn" name="event_date"
-                                value="{{ event.event_date.strftime('%Y-%m-%d') if event.event_date else '' }}"
-                                autocomplete="off" required>
-                        </label>
-
-                        <label class="space-y-2">
-                            <span
-                                class="label-shadcn flex items-center gap-2 text-sm font-medium text-slate-700 dark:text-slate-200">
-                                <i class="far fa-clock text-primary"></i>
-                                Başlangıç Saati
-                            </span>
-                            <input type="time" class="input-shadcn" name="start_time"
-                                value="{{ event.start_time.strftime('%H:%M') if event.start_time else '' }}"
-                                autocomplete="off">
-                        </label>
-
-                        <label class="space-y-2">
-                            <span
-                                class="label-shadcn flex items-center gap-2 text-sm font-medium text-slate-700 dark:text-slate-200">
-                                <i class="far fa-clock text-primary"></i>
-                                Bitiş Saati
-                            </span>
-                            <input type="time" class="input-shadcn" name="end_time"
-                                value="{{ event.end_time.strftime('%H:%M') if event.end_time else '' }}"
-                                autocomplete="off">
-                        </label>
-
-                        <label class="space-y-2">
-                            <span
-                                class="label-shadcn flex items-center gap-2 text-sm font-medium text-slate-700 dark:text-slate-200">
-                                <i class="fas fa-tag text-primary"></i>
-                                Etkinlik Türü
-                            </span>
-                            <input type="text" class="input-shadcn" name="event_type"
-                                value="{{ event.event_type or '' }}" placeholder="Düğün, Konser, Konferans"
-                                autocomplete="off">
-                        </label>
-
-                        <label class="space-y-2">
-                            <span
-                                class="label-shadcn flex items-center gap-2 text-sm font-medium text-slate-700 dark:text-slate-200">
-                                <i class="fas fa-building text-primary"></i>
-                                Mekan Türü
-                            </span>
-                            <select class="input-shadcn" name="venue_type">
-                                <option value="">Seçiniz...</option>
-                                <option value="salon" {{ 'selected' if event.venue_type=='salon' else '' }}>Salon
-                                </option>
-                                <option value="saha" {{ 'selected' if event.venue_type=='saha' else '' }}>Saha</option>
-                                <option value="sahne" {{ 'selected' if event.venue_type=='sahne' else '' }}>Sahne
-                                </option>
-                                <option value="kapali_alan" {{ 'selected' if event.venue_type=='kapali_alan' else '' }}>
-                                    Kapalı Alan</option>
-                                <option value="acik_alan" {{ 'selected' if event.venue_type=='acik_alan' else '' }}>Açık
-                                    Alan</option>
-                            </select>
-                        </label>
-
-                        <label class="md:col-span-2 space-y-2">
-                            <span
-                                class="label-shadcn flex items-center gap-2 text-sm font-medium text-slate-700 dark:text-slate-200">
-                                <i class="fas fa-map-marker-alt text-primary"></i>
-                                Mekan Adı
-                            </span>
-                            <input type="text" class="input-shadcn" name="venue_name"
-                                value="{{ event.venue_name or '' }}" placeholder="Örn: Panorama Salon"
-                                autocomplete="off">
-                        </label>
-                    </div>
+                <div class="step" id="step-2-indicator">
+                    <strong>2. Alan Yapılandırması</strong>
+                    <span class="text-sm">Izgara yapısı ve masa sayısını ayarla</span>
                 </div>
-            </section>
-
-            <!-- Mekan ve Sahne Konfigürasyonu -->
-            <section class="card-shadcn">
-                <div class="card-shadcn-header pb-4">
-                    <div class="flex items-center gap-3">
-                        <span
-                            class="inline-flex h-11 w-11 items-center justify-center rounded-xl bg-blue-500/10 text-blue-500">
-                            <i class="fas fa-ruler-combined"></i>
-                        </span>
-                        <div>
-                            <h2 class="card-shadcn-title text-xl">Mekan Planlaması</h2>
-                            <p class="card-shadcn-description">Salon boyutları ve sahne konumunu ayarla.</p>
-                        </div>
-                    </div>
+                <div class="step" id="step-3-indicator">
+                    <strong>3. Koltuk Yerleşimi</strong>
+                    <span class="text-sm">Koltuk ve masaları yerleştir</span>
                 </div>
-                <div class="card-shadcn-content">
-                    <div class="grid gap-5 md:grid-cols-3">
-                        <label class="space-y-2">
-                            <span
-                                class="label-shadcn flex items-center gap-2 text-sm font-medium text-slate-700 dark:text-slate-200">
-                                <i class="fas fa-arrows-alt-h text-blue-500"></i>
-                                Genişlik (metre)
-                            </span>
-                            <input type="number" step="0.1" class="input-shadcn" name="venue_width"
-                                value="{{ event.venue_width or '' }}" placeholder="0.0" min="0">
-                        </label>
-
-                        <label class="space-y-2">
-                            <span
-                                class="label-shadcn flex items-center gap-2 text-sm font-medium text-slate-700 dark:text-slate-200">
-                                <i class="fas fa-arrows-alt-v text-blue-500"></i>
-                                Uzunluk (metre)
-                            </span>
-                            <input type="number" step="0.1" class="input-shadcn" name="venue_length"
-                                value="{{ event.venue_length or '' }}" placeholder="0.0" min="0">
-                        </label>
-
-                        <label class="space-y-2">
-                            <span
-                                class="label-shadcn flex items-center gap-2 text-sm font-medium text-slate-700 dark:text-slate-200">
-                                <i class="fas fa-th-large text-blue-500"></i>
-                                Sahne Konumu
-                            </span>
-                            <select class="input-shadcn" name="stage_position">
-                                <option value="top" {{ 'selected' if event.stage_position and
-                                    event.stage_position.value=='top' else '' }}>Üst</option>
-                                <option value="bottom" {{ 'selected' if event.stage_position and
-                                    event.stage_position.value=='bottom' else '' }}>Alt
-                                </option>
-                                <option value="left" {{ 'selected' if event.stage_position and
-                                    event.stage_position.value=='left' else '' }}>Sol
-                                </option>
-                                <option value="right" {{ 'selected' if event.stage_position and
-                                    event.stage_position.value=='right' else '' }}>Sağ
-                                </option>
-                            </select>
-                        </label>
-                    </div>
-                </div>
-            </section>
-
-            <!-- Durum Yönetimi -->
-            <section class="card-shadcn">
-                <div class="card-shadcn-header pb-4">
-                    <div class="flex items-center gap-3">
-                        <span class="inline-flex h-11 w-11 items-center justify-center rounded-xl 
-                                   {{ 'bg-amber-500/10 text-amber-600' if event.status == 'draft' else 
-                                      'bg-green-500/10 text-green-600' if event.status == 'active' else
-                                      'bg-blue-500/10 text-blue-600' if event.status == 'completed' else
-                                      'bg-red-500/10 text-red-600' }}">
-                            <i class="fas {{ 'fa-edit' if event.status == 'draft' else 
-                                           'fa-play' if event.status == 'active' else
-                                           'fa-check' if event.status == 'completed' else
-                                           'fa-times' }}"></i>
-                        </span>
-                        <div>
-                            <h2 class="card-shadcn-title text-xl">Etkinlik Durumu</h2>
-                            <p class="card-shadcn-description">Etkinliğin mevcut durumunu yönet ve güncelle.</p>
-                        </div>
-                    </div>
-                </div>
-                <div class="card-shadcn-content">
-                    <div class="grid gap-5 md:grid-cols-2">
-                        <label class="space-y-2">
-                            <span
-                                class="label-shadcn flex items-center gap-2 text-sm font-medium text-slate-700 dark:text-slate-200">
-                                <i class="fas fa-toggle-on text-primary"></i>
-                                Durum
-                            </span>
-                            <select class="input-shadcn" name="status" onchange="updateStatusInfo(this.value)">
-                                <option value="draft" {{ 'selected' if event.status=='draft' else '' }}>Taslak</option>
-                                <option value="active" {{ 'selected' if event.status=='active' else '' }}>Aktif</option>
-                                <option value="completed" {{ 'selected' if event.status=='completed' else '' }}>
-                                    Tamamlandı</option>
-                                <option value="cancelled" {{ 'selected' if event.status=='cancelled' else '' }}>İptal
-                                    Edildi</option>
-                            </select>
-                        </label>
-
-                        <div id="status-info" class="flex items-center">
-                            <div
-                                class="flex items-center gap-3 p-4 rounded-xl 
-                                         {{ 'bg-amber-50 border border-amber-200 text-amber-700 dark:bg-amber-500/10 dark:border-amber-500/40 dark:text-amber-300' if event.status == 'draft' else
-                                            'bg-green-50 border border-green-200 text-green-700 dark:bg-green-500/10 dark:border-green-500/40 dark:text-green-300' if event.status == 'active' else
-                                            'bg-blue-50 border border-blue-200 text-blue-700 dark:bg-blue-500/10 dark:border-blue-500/40 dark:text-blue-300' if event.status == 'completed' else
-                                            'bg-red-50 border border-red-200 text-red-700 dark:bg-red-500/10 dark:border-red-500/40 dark:text-red-300' }}">
-                                <i class="fas {{ 'fa-info-circle' if event.status == 'draft' else 
-                                               'fa-check-circle' if event.status == 'active' else
-                                               'fa-check-double' if event.status == 'completed' else
-                                               'fa-exclamation-triangle' }}"></i>
-                                <span class="text-sm font-medium" id="status-text">
-                                    {{ 'Etkinlik taslak aşamasında' if event.status == 'draft' else
-                                    'Etkinlik aktif ve rezervasyona açık' if event.status == 'active' else
-                                    'Etkinlik başarıyla tamamlandı' if event.status == 'completed' else
-                                    'Etkinlik iptal edildi' }}
-                                </span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </section>
-
-            <!-- Görsel Oturum Düzenleme -->
-            <section class="card-shadcn">
-                <div class="card-shadcn-header pb-4">
-                    <div class="flex items-center gap-3">
-                        <span
-                            class="inline-flex h-11 w-11 items-center justify-center rounded-xl bg-purple-500/10 text-purple-500">
-                            <i class="fas fa-paint-brush"></i>
-                        </span>
-                        <div>
-                            <h2 class="card-shadcn-title text-xl">Görsel Oturum Düzenleme</h2>
-                            <p class="card-shadcn-description">Sürükle-bırak ile oturumları yerleştir, sahne konumunu
-                                ayarla.</p>
-                        </div>
-                    </div>
-                </div>
-                <div class="card-shadcn-content">
-                    <div class="grid gap-6 lg:grid-cols-[1fr,300px]">
-                        <!-- Visual Editor Container -->
-                        <div class="space-y-4 order-2 lg:order-1">
-                            <div id="visual-editor-container" class="visual-editor-wrapper">
-                                <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-4">
-                                    <h3 class="text-lg font-semibold">Oturum Planı</h3>
-                                    <div class="flex flex-wrap gap-2 w-full sm:w-auto"></div>
-                                        <button type="button" class="btn-shadcn btn-shadcn-sm btn-shadcn-outline flex-1 sm:flex-none"
-                                            onclick="openTemplateModal()">
-                                            <i class="fas fa-download"></i>
-                                            <span class="hidden sm:inline">Şablondan Yükle</span>
-                                            <span class="sm:hidden">Yükle</span>
-                                        </button>
-                                        <button type="button" class="btn-shadcn btn-shadcn-sm btn-shadcn-outline flex-1 sm:flex-none"
-                                            onclick="saveAsTemplate()">
-                                            <i class="fas fa-save"></i>
-                                            <span class="hidden sm:inline">Şablon Kaydet</span>
-                                            <span class="sm:hidden">Kaydet</span>
-                                        </button>
-                                        <button type="button" class="btn-shadcn btn-shadcn-sm btn-shadcn-default flex-1 sm:flex-none"
-                                            onclick="saveLayout()">
-                                            <i class="fas fa-check"></i>
-                                            Kaydet
-                                        </button>
-                                    </div>
-                                </div>
-                                <div id="visual-seating-editor"
-                                    class="border border-slate-200 rounded-lg bg-white dark:border-slate-700 dark:bg-slate-800 overflow-x-auto">
-                                    <!-- Visual editor will be initialized here -->
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Oturum Tipleri Paneli -->
-                        <div class="space-y-4 order-1 lg:order-2"></div>
-                            <h3 class="text-lg font-semibold flex items-center gap-2">
-                                <i class="fas fa-layer-group text-purple-500"></i>
-                                Oturum Tipleri
-                            </h3>
-                            <div class="space-y-3" id="seating-types-panel">
-                                <!-- Seating types will be loaded here -->
-                            </div>
-
-                            <!-- Canvas Ayarları -->
-                            <div class="border-t pt-4">
-                                <h4 class="text-sm font-semibold text-slate-700 dark:text-slate-200 mb-3">Canvas
-                                    Ayarları</h4>
-                                <div class="space-y-3">
-                                    <label class="space-y-1">
-                                        <span class="text-xs text-slate-600 dark:text-slate-400">Genişlik</span>
-                                        <input type="number" class="input-shadcn input-sm" id="canvas-width" value="800"
-                                            min="400" max="2000">
-                                    </label>
-                                    <label class="space-y-1">
-                                        <span class="text-xs text-slate-600 dark:text-slate-400">Yükseklik</span>
-                                        <input type="number" class="input-shadcn input-sm" id="canvas-height"
-                                            value="600" min="300" max="1500">
-                                    </label>
-                                    <label class="space-y-1">
-                                        <span class="text-xs text-slate-600 dark:text-slate-400">Grid Boyutu</span>
-                                        <input type="number" class="input-shadcn input-sm" id="grid-size" value="20"
-                                            min="10" max="100">
-                                    </label>
-                                    <button type="button" class="btn-shadcn btn-shadcn-sm btn-shadcn-default w-full"
-                                        onclick="updateCanvasSettings()">
-                                        <i class="fas fa-cog"></i>
-                                        Ayarları Uygula
-                                    </button>
-                                </div>
-                            </div>
-
-                            <!-- Araçlar -->
-                            <div class="border-t pt-4">
-                                <h4 class="text-sm font-semibold text-slate-700 dark:text-slate-200 mb-3">Araçlar</h4>
-                                <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-2 gap-2"></div>
-                                    <button type="button" class="btn-shadcn btn-shadcn-sm btn-shadcn-outline"
-                                        onclick="undoAction()" id="undo-btn" title="Geri Al (Ctrl+Z)">
-                                        <i class="fas fa-undo"></i>
-                                    </button>
-                                    <button type="button" class="btn-shadcn btn-shadcn-sm btn-shadcn-outline"
-                                        onclick="redoAction()" id="redo-btn" title="İleri Al (Ctrl+Y)">
-                                        <i class="fas fa-redo"></i>
-                                    </button>
-                                    <button type="button" class="btn-shadcn btn-shadcn-sm btn-shadcn-outline"
-                                        onclick="zoomIn()" title="Yakınlaştır">
-                                        <i class="fas fa-search-plus"></i>
-                                    </button>
-                                    <button type="button" class="btn-shadcn btn-shadcn-sm btn-shadcn-outline"
-                                        onclick="zoomOut()" title="Uzaklaştır">
-                                        <i class="fas fa-search-minus"></i>
-                                    </button>
-                                    <button type="button" class="btn-shadcn btn-shadcn-sm btn-shadcn-outline"
-                                        onclick="resetZoom()" title="Zoom Sıfırla">
-                                        <i class="fas fa-expand-arrows-alt"></i>
-                                    </button>
-                                    <button type="button" class="btn-shadcn btn-shadcn-sm btn-shadcn-outline"
-                                        onclick="toggleGrid()" id="toggle-grid-btn" title="Kılavuz Çizgileri">
-                                        <i class="fas fa-th"></i>
-                                    </button>
-                                    <button type="button" class="btn-shadcn btn-shadcn-sm btn-shadcn-outline"
-                                        onclick="autoArrange()" title="Otomatik Düzenle">
-                                        <i class="fas fa-magic"></i>
-                                    </button>
-                                    <button type="button" class="btn-shadcn btn-shadcn-sm btn-shadcn-outline"
-                                        onclick="resolveCollisions()" title="Çakışmaları Çöz">
-                                        <i class="fas fa-compress-arrows-alt"></i>
-                                    </button>
-                                    <button type="button" class="btn-shadcn btn-shadcn-sm btn-shadcn-outline"
-                                        onclick="clearCanvas()" title="Tümünü Temizle">
-                                        <i class="fas fa-trash"></i>
-                                    </button>
-                                    <button type="button" class="btn-shadcn btn-shadcn-sm btn-shadcn-outline"
-                                        onclick="duplicateSelected()" title="Seçili Oturumu Çoğalt (Ctrl+D)">
-                                        <i class="fas fa-copy"></i>
-                                    </button>
-                                </div>
-                            </div>
-
-                            <!-- Hizalama Araçları -->
-                            <div class="border-t pt-4">
-                                <h4 class="text-sm font-semibold text-slate-700 dark:text-slate-200 mb-3">Hizalama</h4>
-                                <div class="grid grid-cols-3 gap-2">
-                                    <button type="button" class="btn-shadcn btn-shadcn-sm btn-shadcn-outline"
-                                        onclick="alignLeft()" title="Sola Hizala">
-                                        <i class="fas fa-align-left"></i>
-                                    </button>
-                                    <button type="button" class="btn-shadcn btn-shadcn-sm btn-shadcn-outline"
-                                        onclick="alignCenter()" title="Ortaya Hizala">
-                                        <i class="fas fa-align-center"></i>
-                                    </button>
-                                    <button type="button" class="btn-shadcn btn-shadcn-sm btn-shadcn-outline"
-                                        onclick="alignRight()" title="Sağa Hizala">
-                                        <i class="fas fa-align-right"></i>
-                                    </button>
-                                    <button type="button" class="btn-shadcn btn-shadcn-sm btn-shadcn-outline"
-                                        onclick="alignTop()" title="Üste Hizala">
-                                        <i class="fas fa-arrow-up"></i>
-                                    </button>
-                                    <button type="button" class="btn-shadcn btn-shadcn-sm btn-shadcn-outline"
-                                        onclick="alignMiddle()" title="Dikey Ortala">
-                                        <i class="fas fa-arrows-alt-v"></i>
-                                    </button>
-                                    <button type="button" class="btn-shadcn btn-shadcn-sm btn-shadcn-outline"
-                                        onclick="alignBottom()" title="Alta Hizala">
-                                        <i class="fas fa-arrow-down"></i>
-                                    </button>
-                                </div>
-                            </div>
-
-                            <!-- Dağıtım Araçları -->
-                            <div class="border-t pt-4">
-                                <h4 class="text-sm font-semibold text-slate-700 dark:text-slate-200 mb-3">Dağıtım</h4>
-                                <div class="grid grid-cols-2 gap-2">
-                                    <button type="button" class="btn-shadcn btn-shadcn-sm btn-shadcn-outline"
-                                        onclick="distributeHorizontally()" title="Yatay Dağıt">
-                                        <i class="fas fa-arrows-alt-h"></i>
-                                        <span class="text-xs">Yatay</span>
-                                    </button>
-                                    <button type="button" class="btn-shadcn btn-shadcn-sm btn-shadcn-outline"
-                                        onclick="distributeVertically()" title="Dikey Dağıt">
-                                        <i class="fas fa-arrows-alt-v"></i>
-                                        <span class="text-xs">Dikey</span>
-                                    </button>
-                                </div>
-                            </div>
-
-                            <!-- Kapasite Göstergesi -->
-                            <div class="border-t pt-4">
-                                <h4 class="text-sm font-semibold text-slate-700 dark:text-slate-200 mb-3">Kapasite Bilgisi</h4>
-                                <div class="space-y-3">
-                                    <div class="flex items-center justify-between p-3 rounded-lg bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20">
-                                        <div class="flex items-center gap-2">
-                                            <i class="fas fa-users text-blue-500"></i>
-                                            <span class="text-sm text-slate-700 dark:text-slate-200">Toplam Kapasite</span>
-                                        </div>
-                                        <span class="text-lg font-bold text-slate-900 dark:text-white" id="total-capacity">0</span>
-                                    </div>
-                                    <div class="flex items-center justify-between p-3 rounded-lg bg-slate-50 dark:bg-slate-800/50">
-                                        <div class="flex items-center gap-2">
-                                            <i class="fas fa-chair text-purple-500"></i>
-                                            <span class="text-sm text-slate-700 dark:text-slate-200">Oturum Sayısı</span>
-                                        </div>
-                                        <span class="text-lg font-bold text-slate-900 dark:text-white" id="seating-count">0</span>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- Seçili Oturum Bilgisi -->
-                            <div class="border-t pt-4" id="selected-seating-panel" style="display: none;">
-                                <h4 class="text-sm font-semibold text-slate-700 dark:text-slate-200 mb-3 flex items-center gap-2">
-                                    <i class="fas fa-info-circle text-blue-500"></i>
-                                    Seçili Oturum
-                                </h4>
-                                <div class="space-y-3 p-3 rounded-lg bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800">
-                                    <div class="flex items-center justify-between">
-                                        <span class="text-xs text-slate-600 dark:text-slate-400">Ad:</span>
-                                        <span class="text-sm font-medium text-slate-900 dark:text-white" id="selected-name">-</span>
-                                    </div>
-                                    <div class="flex items-center justify-between">
-                                        <span class="text-xs text-slate-600 dark:text-slate-400">Tip:</span>
-                                        <span class="text-sm font-medium text-slate-900 dark:text-white" id="selected-type">-</span>
-                                    </div>
-                                    <div class="flex items-center justify-between">
-                                        <span class="text-xs text-slate-600 dark:text-slate-400">Kapasite:</span>
-                                        <span class="text-sm font-medium text-slate-900 dark:text-white" id="selected-capacity">-</span>
-                                    </div>
-                                    <div class="flex items-center justify-between">
-                                        <span class="text-xs text-slate-600 dark:text-slate-400">Pozisyon:</span>
-                                        <span class="text-sm font-medium text-slate-900 dark:text-white" id="selected-position">-</span>
-                                    </div>
-                                    <div class="flex items-center justify-between">
-                                        <span class="text-xs text-slate-600 dark:text-slate-400">Boyut:</span>
-                                        <span class="text-sm font-medium text-slate-900 dark:text-white" id="selected-size">-</span>
-                                    </div>
-                                    <div class="flex items-center justify-between">
-                                        <span class="text-xs text-slate-600 dark:text-slate-400">Renk:</span>
-                                        <div class="flex items-center gap-2">
-                                            <div id="selected-color-box" class="w-6 h-6 rounded border border-slate-300 dark:border-slate-600"></div>
-                                            <span class="text-xs font-mono text-slate-600 dark:text-slate-400" id="selected-color-code">-</span>
-                                        </div>
-                                    </div>
-                                    <div class="grid grid-cols-2 gap-2 pt-2 border-t border-blue-200 dark:border-blue-800">
-                                        <button type="button" onclick="editSelectedSeating()" class="btn-shadcn btn-shadcn-sm btn-shadcn-default">
-                                            <i class="fas fa-edit"></i>
-                                            Düzenle
-                                        </button>
-                                        <button type="button" onclick="deleteSelectedSeating()" class="btn-shadcn btn-shadcn-sm btn-shadcn-outline text-red-600 border-red-300">
-                                            <i class="fas fa-trash"></i>
-                                            Sil
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- Klavye Kısayolları -->
-                            <div class="border-t pt-4">
-                                <h4 class="text-sm font-semibold text-slate-700 dark:text-slate-200 mb-3 flex items-center gap-2">
-                                    <i class="fas fa-keyboard text-purple-500"></i>
-                                    Klavye Kısayolları
-                                </h4>
-                                <div class="space-y-2 text-xs text-slate-600 dark:text-slate-400">
-                                    <div class="flex items-center justify-between">
-                                        <span>Tümünü Seç:</span>
-                                        <kbd class="px-2 py-1 bg-slate-100 dark:bg-slate-800 rounded border border-slate-300 dark:border-slate-600">Ctrl+A</kbd>
-                                    </div>
-                                    <div class="flex items-center justify-between">
-                                        <span>Çoklu Seçim:</span>
-                                        <kbd class="px-2 py-1 bg-slate-100 dark:bg-slate-800 rounded border border-slate-300 dark:border-slate-600">Shift+Click</kbd>
-                                    </div>
-                                    <div class="flex items-center justify-between">
-                                        <span>Lasso Seçim:</span>
-                                        <kbd class="px-2 py-1 bg-slate-100 dark:bg-slate-800 rounded border border-slate-300 dark:border-slate-600">Sürükle</kbd>
-                                    </div>
-                                    <div class="flex items-center justify-between">
-                                        <span>Kopyala:</span>
-                                        <kbd class="px-2 py-1 bg-slate-100 dark:bg-slate-800 rounded border border-slate-300 dark:border-slate-600">Ctrl+C</kbd>
-                                    </div>
-                                    <div class="flex items-center justify-between">
-                                        <span>Yapıştır:</span>
-                                        <kbd class="px-2 py-1 bg-slate-100 dark:bg-slate-800 rounded border border-slate-300 dark:border-slate-600">Ctrl+V</kbd>
-                                    </div>
-                                    <div class="flex items-center justify-between">
-                                        <span>Kes:</span>
-                                        <kbd class="px-2 py-1 bg-slate-100 dark:bg-slate-800 rounded border border-slate-300 dark:border-slate-600">Ctrl+X</kbd>
-                                    </div>
-                                    <div class="flex items-center justify-between">
-                                        <span>Çoğalt:</span>
-                                        <kbd class="px-2 py-1 bg-slate-100 dark:bg-slate-800 rounded border border-slate-300 dark:border-slate-600">Ctrl+D</kbd>
-                                    </div>
-                                    <div class="flex items-center justify-between">
-                                        <span>Sil:</span>
-                                        <kbd class="px-2 py-1 bg-slate-100 dark:bg-slate-800 rounded border border-slate-300 dark:border-slate-600">Delete</kbd>
-                                    </div>
-                                    <div class="flex items-center justify-between">
-                                        <span>Geri Al:</span>
-                                        <kbd class="px-2 py-1 bg-slate-100 dark:bg-slate-800 rounded border border-slate-300 dark:border-slate-600">Ctrl+Z</kbd>
-                                    </div>
-                                    <div class="flex items-center justify-between">
-                                        <span>İleri Al:</span>
-                                        <kbd class="px-2 py-1 bg-slate-100 dark:bg-slate-800 rounded border border-slate-300 dark:border-slate-600">Ctrl+Y</kbd>
-                                    </div>
-                                    <div class="flex items-center justify-between">
-                                        <span>Hareket:</span>
-                                        <kbd class="px-2 py-1 bg-slate-100 dark:bg-slate-800 rounded border border-slate-300 dark:border-slate-600">↑↓←→</kbd>
-                                    </div>
-                                    <div class="flex items-center justify-between">
-                                        <span>Seçimi Kaldır:</span>
-                                        <kbd class="px-2 py-1 bg-slate-100 dark:bg-slate-800 rounded border border-slate-300 dark:border-slate-600">Esc</kbd>
-                                    </div>
-                                </div>
-                            </div>
-                            
-                            <!-- Snap Ayarları -->
-                            <div class="border-t pt-4">
-                                <h4 class="text-sm font-semibold text-slate-700 dark:text-slate-200 mb-3 flex items-center gap-2">
-                                    <i class="fas fa-magnet text-green-500"></i>
-                                    Yapışma Ayarları
-                                </h4>
-                                <div class="space-y-3">
-                                    <label class="flex items-center gap-2 cursor-pointer">
-                                        <input type="checkbox" id="snap-to-grid" class="rounded" checked onchange="toggleSnapToGrid(this.checked)">
-                                        <span class="text-xs text-slate-700 dark:text-slate-200">Grid'e Yapış</span>
-                                    </label>
-                                    <label class="flex items-center gap-2 cursor-pointer">
-                                        <input type="checkbox" id="snap-to-objects" class="rounded" checked onchange="toggleSnapToObjects(this.checked)">
-                                        <span class="text-xs text-slate-700 dark:text-slate-200">Nesnelere Yapış</span>
-                                    </label>
-                                    <label class="flex items-center gap-2 cursor-pointer">
-                                        <input type="checkbox" id="show-guides" class="rounded" checked onchange="toggleAlignmentGuides(this.checked)">
-                                        <span class="text-xs text-slate-700 dark:text-slate-200">Hizalama Çizgileri</span>
-                                    </label>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </section>
-
-            <!-- Eylemler -->
-            <section
-                class="card-shadcn border border-dashed border-slate-200 bg-slate-50 dark:border-slate-800 dark:bg-slate-900/40">
-                <div class="card-shadcn-content">
-                    <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                        <div class="flex items-center gap-4 text-slate-600 dark:text-slate-300">
-                            <span
-                                class="inline-flex h-12 w-12 items-center justify-center rounded-full bg-blue-500/10 text-blue-500">
-                                <i class="fas fa-save"></i>
-                            </span>
-                            <div>
-                                <p class="text-sm font-semibold text-slate-800 dark:text-white">Değişiklikleri Kaydet
-                                </p>
-                                <p class="text-xs text-slate-500 dark:text-slate-400">Tüm değişikliklerin kaydedilmesi
-                                    için onayla.</p>
-                            </div>
-                        </div>
-                        <div class="flex w-full flex-col gap-2 sm:w-auto sm:flex-row">
-                            <a href="{{ url_for('event.index') }}" class="btn-shadcn btn-shadcn-outline">
-                                <i class="fas fa-times"></i>
-                                <span>İptal</span>
-                            </a>
-                            <button type="submit" class="btn-shadcn btn-shadcn-default">
-                                <i class="fas fa-check"></i>
-                                <span>Değişiklikleri Kaydet</span>
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </section>
-
-            <!-- Tehlikeli İşlemler -->
-            <section class="card-shadcn border border-red-200 bg-red-50/50 dark:border-red-900/40 dark:bg-red-900/10">
-                <div class="card-shadcn-header pb-4">
-                    <div class="flex items-center gap-3">
-                        <span
-                            class="inline-flex h-11 w-11 items-center justify-center rounded-xl bg-red-500/10 text-red-500">
-                            <i class="fas fa-exclamation-triangle"></i>
-                        </span>
-                        <div>
-                            <h2 class="card-shadcn-title text-xl text-red-700 dark:text-red-300">Tehlikeli İşlemler</h2>
-                            <p class="card-shadcn-description text-red-600 dark:text-red-400">Bu işlemler geri alınamaz.
-                                Dikkatli olun.</p>
-                        </div>
-                    </div>
-                </div>
-                <div class="card-shadcn-content">
-                    <div class="grid gap-4 md:grid-cols-2">
-                        <!-- Etkinlik İptal -->
-                        <div class="space-y-3">
-                            <h3 class="text-sm font-semibold text-slate-900 dark:text-white flex items-center gap-2">
-                                <i class="fas fa-ban text-amber-500"></i>
-                                Etkinlik İptal
-                            </h3>
-                            <p class="text-xs text-slate-600 dark:text-slate-400">
-                                Etkinliği iptal eder ve tüm aktif rezervasyonları otomatik olarak iptal eder.
-                            </p>
-                            <form method="POST" action="{{ url_for('event.cancel', event_id=event.id) }}"
-                                class="inline">
-                                <button type="submit"
-                                    onclick="return confirm('Bu etkinliği iptal etmek istediğinizden emin misiniz? Tüm aktif rezervasyonlar da iptal edilecek.')"
-                                    class="btn-shadcn btn-shadcn-outline text-amber-600 border-amber-300 hover:bg-amber-50 dark:text-amber-400 dark:border-amber-600"
-                                    {% if event.status=='cancelled' %}disabled{% endif %}>
-                                    <i class="fas fa-ban"></i>
-                                    <span>Etkinliği İptal Et</span>
-                                </button>
-                            </form>
-                        </div>
-
-                        <!-- Etkinlik Silme -->
-                        <div class="space-y-3">
-                            <h3 class="text-sm font-semibold text-slate-900 dark:text-white flex items-center gap-2">
-                                <i class="fas fa-trash text-red-500"></i>
-                                Etkinlik Sil
-                            </h3>
-                            <p class="text-xs text-slate-600 dark:text-slate-400">
-                                Etkinliği kalıcı olarak siler. Yalnızca rezervasyonsuz etkinlikler silinebilir.
-                            </p>
-                            <form method="POST" action="{{ url_for('event.delete', event_id=event.id) }}"
-                                class="inline">
-                                <button type="submit"
-                                    onclick="return confirm('Bu etkinliği kalıcı olarak silmek istediğinizden emin misiniz? Bu işlem geri alınamaz!')"
-                                    class="btn-shadcn btn-shadcn-outline text-red-600 border-red-300 hover:bg-red-50 dark:text-red-400 dark:border-red-600"
-                                    {% if event.reservations|length> 0 %}disabled title="Bu etkinliğe ait rezervasyonlar
-                                    var"{% endif %}>
-                                    <i class="fas fa-trash"></i>
-                                    <span>Etkinliği Sil</span>
-                                </button>
-                            </form>
-                        </div>
-                    </div>
-                </div>
-            </section>
-        </form>
-
-        <aside class="space-y-6 order-1 lg:order-2"></aside>
-            <!-- Etkinlik Durumu -->
-            <div class="card-shadcn">
-                <div class="card-shadcn-content space-y-4">
-                    <h3 class="text-sm font-semibold text-slate-900 dark:text-white">Hızlı İşlemler</h3>
-                    <div class="space-y-3">
-                        <a href="{{ url_for('reservation.index') }}"
-                            class="flex items-center justify-between rounded-xl border border-slate-200 px-3 py-2 transition hover:border-primary dark:border-slate-800">
-                            <span class="flex items-center gap-2">
-                                <i class="fas fa-ticket-alt text-primary"></i>
-                                Rezervasyonlar
-                            </span>
-                            <i class="fas fa-arrow-right"></i>
-                        </a>
-
-                        <a href="{{ url_for('report.index') }}"
-                            class="flex items-center justify-between rounded-xl border border-slate-200 px-3 py-2 transition hover:border-primary dark:border-slate-800">
-                            <span class="flex items-center gap-2">
-                                <i class="fas fa-chart-pie text-primary"></i>
-                                Rapor
-                            </span>
-                            <i class="fas fa-arrow-right"></i>
-                        </a>
-                    </div>
-                </div>
-            </div>
-
-            <!-- İpuçları -->
-            <div class="card-shadcn bg-gradient-to-br from-blue-500/10 via-transparent to-purple-500/10">
-                <div class="card-shadcn-content space-y-4">
-                    <div class="flex items-start gap-3">
-                        <span
-                            class="inline-flex h-10 w-10 items-center justify-center rounded-full bg-blue-500/10 text-blue-500">
-                            <i class="fas fa-lightbulb"></i>
-                        </span>
-                        <div class="space-y-2">
-                            <h3 class="text-sm font-semibold text-slate-900 dark:text-white">Düzenleme İpuçları</h3>
-                            <ul class="space-y-2 text-xs leading-relaxed text-slate-600 dark:text-slate-300">
-                                <li class="flex items-start gap-2">
-                                    <i class="fas fa-check mt-0.5 text-green-500"></i>
-                                    <span>Etkinlik durumunu 'Aktif' yaparak rezervasyonları açabilirsin.</span>
-                                </li>
-                                <li class="flex items-start gap-2">
-                                    <i class="fas fa-check mt-0.5 text-green-500"></i>
-                                    <span>Mekan boyutlarını gerçek ölçülerde girmen koltuk planlamasını
-                                        kolaylaştırır.</span>
-                                </li>
-                                <li class="flex items-start gap-2">
-                                    <i class="fas fa-check mt-0.5 text-green-500"></i>
-                                    <span>Sahne konumu koltuk yerleşimini doğrudan etkiler.</span>
-                                </li>
-                            </ul>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Etkinlik Bilgileri -->
-            <div class="card-shadcn">
-                <div class="card-shadcn-content space-y-4">
-                    <h3 class="text-sm font-semibold text-slate-900 dark:text-white">Etkinlik Bilgileri</h3>
-                    <div class="space-y-3 text-sm">
-                        <div class="flex items-center justify-between">
-                            <span class="text-slate-600 dark:text-slate-400">Oluşturulma:</span>
-                            <span class="font-medium text-slate-900 dark:text-white">
-                                {{ event.created_at.strftime('%d.%m.%Y %H:%M') if event.created_at else 'Bilinmiyor' }}
-                            </span>
-                        </div>
-                        <div class="flex items-center justify-between">
-                            <span class="text-slate-600 dark:text-slate-400">Son Güncelleme:</span>
-                            <span class="font-medium text-slate-900 dark:text-white">
-                                {{ event.updated_at.strftime('%d.%m.%Y %H:%M') if event.updated_at else 'Bilinmiyor' }}
-                            </span>
-                        </div>
-                        <div class="flex items-center justify-between">
-                            <span class="text-slate-600 dark:text-slate-400">Rezervasyonlar:</span>
-                            <span class="font-medium text-slate-900 dark:text-white">
-                                {{ event.reservations|length if event.reservations else 0 }}
-                            </span>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </aside>
-    </div>
-</div>
-
-<!-- Şablon Seçici Modal -->
-<div id="template-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-    <div class="relative w-full max-w-2xl rounded-xl bg-white shadow-2xl dark:bg-slate-900 max-h-[90vh] overflow-hidden flex flex-col"></div>
-        <div class="flex items-center justify-between border-b border-slate-200 p-6 dark:border-slate-700">
-            <div class="flex items-center gap-3">
-                <span class="inline-flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 text-primary">
-                    <i class="fas fa-layer-group"></i>
-                </span>
-                <div>
-                    <h3 class="text-xl font-bold text-slate-900 dark:text-white">Şablon Seç</h3>
-                    <p class="text-sm text-slate-600 dark:text-slate-400">Kayıtlı şablonlardan birini yükle</p>
-                </div>
-            </div>
-            <button type="button" onclick="closeTemplateModal()" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200">
-                <i class="fas fa-times text-xl"></i>
-            </button>
-        </div>
-        <div class="flex-1 overflow-y-auto p-6">
-            <div id="template-list" class="space-y-3">
-                <!-- Templates will be loaded here -->
             </div>
         </div>
     </div>
-</div>
 
-<!-- Şablon Kaydetme Modal -->
-<div id="save-template-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-    <div class="relative w-full max-w-md rounded-xl bg-white shadow-2xl dark:bg-slate-900 max-h-[90vh] overflow-hidden flex flex-col"></div>
-        <div class="flex items-center justify-between border-b border-slate-200 p-6 dark:border-slate-700">
-            <div class="flex items-center gap-3">
-                <span class="inline-flex h-10 w-10 items-center justify-center rounded-lg bg-green-500/10 text-green-500">
-                    <i class="fas fa-save"></i>
-                </span>
-                <div>
-                    <h3 class="text-xl font-bold text-slate-900 dark:text-white">Şablon Kaydet</h3>
-                    <p class="text-sm text-slate-600 dark:text-slate-400">Mevcut düzeni şablon olarak kaydet</p>
-                </div>
-            </div>
-            <button type="button" onclick="closeSaveTemplateModal()" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200">
-                <i class="fas fa-times text-xl"></i>
-            </button>
-        </div>
-        <div class="flex-1 overflow-y-auto p-6"></div>
-            <form id="save-template-form" class="space-y-4">
-                <label class="space-y-2">
-                    <span class="label-shadcn">Şablon Adı</span>
-                    <input type="text" id="template-name" class="input-shadcn" placeholder="Örn: Düğün Salonu Standart" required>
-                </label>
-                <label class="space-y-2">
-                    <span class="label-shadcn">Açıklama</span>
-                    <textarea id="template-description" class="textarea-shadcn" rows="3" placeholder="Şablon hakkında kısa açıklama..."></textarea>
-                </label>
-                <label class="space-y-2">
-                    <span class="label-shadcn">Kategori</span>
-                    <select id="template-category" class="input-shadcn">
-                        <option value="general">Genel</option>
-                        <option value="wedding">Düğün</option>
-                        <option value="conference">Konferans</option>
-                        <option value="concert">Konser</option>
-                        <option value="other">Diğer</option>
-                    </select>
-                </label>
-                <div class="flex gap-3">
-                    <button type="button" onclick="closeSaveTemplateModal()" class="btn-shadcn btn-shadcn-outline flex-1">
-                        <i class="fas fa-times"></i>
-                        İptal
-                    </button>
-                    <button type="submit" class="btn-shadcn btn-shadcn-default flex-1">
-                        <i class="fas fa-save"></i>
-                        Kaydet
-                    </button>
-                </div>
-            </form>
-        </div>
-    </div>
-</div>
-
-<!-- Oturum Düzenleme Modal -->
-<div id="edit-seating-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-    <div class="relative w-full max-w-md rounded-xl bg-white shadow-2xl dark:bg-slate-900 max-h-[90vh] overflow-hidden flex flex-col"></div>
-        <div class="flex items-center justify-between border-b border-slate-200 p-6 dark:border-slate-700">
-            <div class="flex items-center gap-3">
-                <span class="inline-flex h-10 w-10 items-center justify-center rounded-lg bg-blue-500/10 text-blue-500">
-                    <i class="fas fa-edit"></i>
-                </span>
-                <div>
-                    <h3 class="text-xl font-bold text-slate-900 dark:text-white">Oturum Düzenle</h3>
-                    <p class="text-sm text-slate-600 dark:text-slate-400">Oturum özelliklerini güncelle</p>
-                </div>
-            </div>
-            <button type="button" onclick="closeEditSeatingModal()" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200">
-                <i class="fas fa-times text-xl"></i>
-            </button>
-        </div>
-        <div class="flex-1 overflow-y-auto p-6"></div>
-            <form id="edit-seating-form" class="space-y-4">
-                <label class="space-y-2">
-                    <span class="label-shadcn flex items-center gap-2">
-                        <i class="fas fa-signature text-blue-500"></i>
-                        Oturum Adı
-                    </span>
-                    <input type="text" id="edit-seating-name" class="input-shadcn" placeholder="Örn: Masa 1" required>
-                </label>
-                <label class="space-y-2">
-                    <span class="label-shadcn flex items-center gap-2">
-                        <i class="fas fa-users text-blue-500"></i>
-                        Kapasite
-                    </span>
-                    <input type="number" id="edit-seating-capacity" class="input-shadcn" min="1" max="100" required>
-                </label>
-                <div class="grid grid-cols-2 gap-4">
-                    <label class="space-y-2">
-                        <span class="label-shadcn flex items-center gap-2">
-                            <i class="fas fa-arrows-alt-h text-blue-500"></i>
-                            Genişlik
-                        </span>
-                        <input type="number" id="edit-seating-width" class="input-shadcn" min="20" max="200" required>
-                    </label>
-                    <label class="space-y-2">
-                        <span class="label-shadcn flex items-center gap-2">
-                            <i class="fas fa-arrows-alt-v text-blue-500"></i>
-                            Yükseklik
-                        </span>
-                        <input type="number" id="edit-seating-height" class="input-shadcn" min="20" max="200" required>
-                    </label>
-                </div>
-                <div class="grid grid-cols-2 gap-4">
-                    <label class="space-y-2">
-                        <span class="label-shadcn flex items-center gap-2">
-                            <i class="fas fa-map-marker-alt text-blue-500"></i>
-                            X Pozisyon
-                        </span>
-                        <input type="number" id="edit-seating-x" class="input-shadcn" min="0" required>
-                    </label>
-                    <label class="space-y-2">
-                        <span class="label-shadcn flex items-center gap-2">
-                            <i class="fas fa-map-marker-alt text-blue-500"></i>
-                            Y Pozisyon
-                        </span>
-                        <input type="number" id="edit-seating-y" class="input-shadcn" min="0" required>
-                    </label>
-                </div>
-                <label class="space-y-2">
-                    <span class="label-shadcn flex items-center gap-2">
-                        <i class="fas fa-palette text-blue-500"></i>
-                        Renk
-                    </span>
-                    <div class="flex gap-2">
-                        <input type="color" id="edit-seating-color" class="h-10 w-20 rounded border border-slate-300 dark:border-slate-600 cursor-pointer">
-                        <input type="text" id="edit-seating-color-text" class="input-shadcn flex-1 font-mono" placeholder="#3498db" pattern="^#[0-9A-Fa-f]{6}$">
-                    </div>
-                </label>
-                <label class="space-y-2">
-                    <span class="label-shadcn flex items-center gap-2">
-                        <i class="fas fa-smile text-blue-500"></i>
-                        İkon
-                    </span>
-                    <input type="text" id="edit-seating-icon" class="input-shadcn" placeholder="🪑" maxlength="2">
-                </label>
-                <div class="flex gap-3 pt-2">
-                    <button type="button" onclick="closeEditSeatingModal()" class="btn-shadcn btn-shadcn-outline flex-1">
-                        <i class="fas fa-times"></i>
-                        İptal
-                    </button>
-                    <button type="submit" class="btn-shadcn btn-shadcn-default flex-1">
-                        <i class="fas fa-check"></i>
-                        Kaydet
-                    </button>
-                </div>
-            </form>
-        </div>
-    </div>
-</div>
-
-<script src="{{ url_for('static', filename='js/visual-editor.js') }}"></script>
-<script>
-    let visualEditor = null;
-    let currentSeatingTypes = [];
-
-    // Initialize visual editor when page loads
-    document.addEventListener( 'DOMContentLoaded', function () {
-        initializeVisualEditor();
-        loadSeatingTypes();
-        loadCurrentLayout();
-    } );
-
-    function initializeVisualEditor() {
-        const container = document.getElementById( 'visual-seating-editor' );
-        if ( container ) {
-            // Responsive canvas boyutu
-            const containerWidth = container.parentElement.offsetWidth;
-            const canvasWidth = Math.min( 800, containerWidth - 40 );
-            const canvasHeight = Math.min( 600, window.innerHeight * 0.6 );
-
-            visualEditor = new VisualSeatingEditor( 'visual-seating-editor', {
-                width: canvasWidth,
-                height: canvasHeight,
-                gridSize: 20,
-                stagePosition: '{{ event.stage_position.value if event.stage_position else "top" }}'
-            } );
-
-            // Canvas boyutunu input'lara yaz
-            document.getElementById( 'canvas-width' ).value = canvasWidth;
-            document.getElementById( 'canvas-height' ).value = canvasHeight;
-        }
-    }
-
-    // Window resize event
-    let resizeTimeout;
-    window.addEventListener( 'resize', function () {
-        clearTimeout( resizeTimeout );
-        resizeTimeout = setTimeout( function () {
-            if ( visualEditor ) {
-                const container = document.getElementById( 'visual-seating-editor' );
-                const containerWidth = container.parentElement.offsetWidth;
-                const newWidth = Math.min( 800, containerWidth - 40 );
-                
-                // Sadece önemli değişikliklerde yeniden oluştur
-                if ( Math.abs( visualEditor.config.width - newWidth ) > 50 ) {
-                    const currentData = visualEditor.getConfiguration();
-                    visualEditor.config.width = newWidth;
-                    container.innerHTML = '';
-                    initializeVisualEditor();
-                    if ( currentData.seatings.length > 0 ) {
-                        visualEditor.loadConfiguration( currentData );
-                    }
-                }
-            }
-        }, 500 );
-    } );
-
-    function loadSeatingTypes() {
-        fetch( `/event/{{ event.id }}/seating-config` )
-            .then( response => response.json() )
-            .then( data => {
-                if ( data.success ) {
-                    currentSeatingTypes = data.data.seating_types;
-                    renderSeatingTypesPanel();
-                }
-            } )
-            .catch( error => {
-                console.error( 'Error loading seating types:', error );
-            } );
-    }
-
-    function renderSeatingTypesPanel() {
-        const panel = document.getElementById( 'seating-types-panel' );
-        panel.innerHTML = '';
-
-        currentSeatingTypes.forEach( type => {
-            const element = document.createElement( 'div' );
-            element.className = 'flex items-center justify-between p-3 border border-slate-200 rounded-lg hover:border-purple-300 cursor-pointer dark:border-slate-700';
-            element.onclick = () => addSeatingToCanvas( type );
-
-            element.innerHTML = `
+    <div class="setup-wizard active" id="step-1">
+        <div class="card-shadcn">
+            <div class="card-shadcn-header pb-4">
                 <div class="flex items-center gap-3">
-                    <span class="text-2xl">${type.icon || '🪑'}</span>
+                    <span
+                        class="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                        <i class="fas fa-theater-masks"></i>
+                    </span>
                     <div>
-                        <p class="text-sm font-medium text-slate-900 dark:text-white">${type.name}</p>
-                        <p class="text-xs text-slate-500 dark:text-slate-400">${type.capacity} kişi</p>
+                        <h2 class="text-lg font-semibold text-slate-900 dark:text-white">Adım 1: Sahne Yerleşimi</h2>
+                        <p class="text-sm text-slate-500 dark:text-slate-400">Boyutları belirle ve sahneyi kanvasa
+                            yerleştir.</p>
                     </div>
                 </div>
-                <div class="w-4 h-4 rounded" style="background-color: ${type.color_code || '#3498db'}"></div>
-            `;
-
-            panel.appendChild( element );
-        } );
-    }
-
-    function addSeatingToCanvas( seatingType ) {
-        if ( visualEditor ) {
-            console.log( '🎯 Masa ekleniyor:', seatingType );
-
-            // Merkeze yakın rastgele pozisyon
-            const centerX = visualEditor.config.width / 2;
-            const centerY = visualEditor.config.height / 2;
-            const randomOffsetX = (Math.random() - 0.5) * 200;
-            const randomOffsetY = (Math.random() - 0.5) * 200;
-            
-            const position = { 
-                x: Math.max(50, Math.min(centerX + randomOffsetX, visualEditor.config.width - 100)), 
-                y: Math.max(50, Math.min(centerY + randomOffsetY, visualEditor.config.height - 100))
-            };
-            
-            const config = {
-                name: `${seatingType.name} ${visualEditor.seatings.length + 1}`,
-                width: seatingType.seat_type === 'table' ? 60 : 30,
-                height: seatingType.seat_type === 'table' ? 40 : 30,
-                capacity: seatingType.capacity,
-                color: seatingType.color_code || '#3498db',
-                icon: seatingType.icon || '🪑',
-                type: seatingType.seat_type
-            };
-
-            console.log( '📐 Masa config:', config );
-            const result = visualEditor.addSeating( seatingType.seat_type, position, config );
-            
-            if ( result ) {
-                console.log( '✅ Masa eklendi:', result );
-                console.log( '📊 Toplam masa sayısı:', visualEditor.seatings.length );
-                updateCapacityInfo();
-                showNotification( `${seatingType.name} eklendi`, 'success' );
-            } else {
-                console.error( '❌ Masa eklenemedi - çakışma veya alan yetersiz' );
-                showNotification( 'Oturum eklenemedi - uygun alan bulunamadı', 'warning' );
-            }
-        } else {
-            console.error( '❌ Visual editor bulunamadı!' );
-            showNotification( 'Editor hazır değil', 'error' );
-        }
-    }
-
-    function updateCapacityInfo() {
-        if ( !visualEditor ) return;
-
-        const totalCapacity = visualEditor.seatings.reduce( ( sum, seat ) => sum + ( seat.capacity || 0 ), 0 );
-        const seatingCount = visualEditor.seatings.length;
-
-        document.getElementById( 'total-capacity' ).textContent = totalCapacity;
-        document.getElementById( 'seating-count' ).textContent = seatingCount;
-    }
-
-    function loadCurrentLayout() {
-        fetch( `/event/{{ event.id }}/seating-config` )
-            .then( response => response.json() )
-            .then( data => {
-                if ( data.success && visualEditor ) {
-                    const config = data.data;
-
-                    // Update canvas settings
-                    if ( config.canvas ) {
-                        document.getElementById( 'canvas-width' ).value = config.canvas.width;
-                        document.getElementById( 'canvas-height' ).value = config.canvas.height;
-                        document.getElementById( 'grid-size' ).value = config.canvas.grid_size;
-                    }
-
-                    // Load seatings
-                    if ( config.seatings && config.seatings.length > 0 ) {
-                        console.log( '📥 Mevcut düzen yükleniyor:', config.seatings.length, 'oturum' );
-                        
-                        // Map backend data to visual editor format
-                        const seatingsData = config.seatings.map( s => ({
-                            id: s.id,
-                            type: s.name ? s.name.toLowerCase().includes('masa') ? 'table' : 'chair' : 'table',
-                            x: s.position_x || 100,
-                            y: s.position_y || 100,
-                            width: s.width || 60,
-                            height: s.height || 40,
-                            capacity: s.capacity || 4,
-                            name: s.seat_number || s.name || `M${s.id}`,
-                            color: s.color_code || '#3498db',
-                            icon: s.icon || '🪑',
-                            reserved: false
-                        }));
-                        
-                        visualEditor.loadSeatingsData( seatingsData );
-                        updateCapacityInfo();
-                        console.log( '✅ Düzen yüklendi' );
-                    }
-                }
-            } )
-            .catch( error => {
-                console.error( 'Error loading current layout:', error );
-            } );
-    }
-
-    function saveLayout() {
-        if ( !visualEditor ) {
-            console.error( '❌ Visual editor bulunamadı!' );
-            return;
-        }
-
-        console.log( '💾 Düzen kaydediliyor...' );
-        console.log( '📊 Mevcut masalar:', visualEditor.seatings );
-
-        const config = visualEditor.getConfiguration();
-        console.log( '⚙️ Configuration:', config );
-
-        const data = {
-            canvas_width: parseInt( document.getElementById( 'canvas-width' ).value ),
-            canvas_height: parseInt( document.getElementById( 'canvas-height' ).value ),
-            grid_size: parseInt( document.getElementById( 'grid-size' ).value ),
-            stage_position: config.stagePosition,
-            seats: config.seatings.map( seat => {
-                const seatingTypeId = findSeatingTypeId( seat.type, seat.capacity );
-                console.log( `🔍 Masa ${seat.name}: type=${seat.type}, capacity=${seat.capacity}, seating_type_id=${seatingTypeId}` );
-                return {
-                    seating_type_id: seatingTypeId,
-                    seat_number: seat.name,
-                    position_x: seat.x,
-                    position_y: seat.y,
-                    width: seat.width,
-                    height: seat.height,
-                    color_code: seat.color
-                };
-            } )
-        };
-
-        console.log( '📤 Gönderilecek data:', data );
-
-        fetch( `/event/{{ event.id }}/save-layout`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify( data )
-        } )
-            .then( response => {
-                console.log( '📥 Response status:', response.status );
-                return response.json();
-            } )
-            .then( result => {
-                console.log( '📥 Response:', result );
-                if ( result.success ) {
-                    showNotification( 'Görsel plan başarıyla kaydedildi!', 'success' );
-                } else {
-                    showNotification( 'Kaydetme hatası: ' + result.message, 'error' );
-                }
-            } )
-            .catch( error => {
-                console.error( '❌ Error saving layout:', error );
-                showNotification( 'Kaydetme sırasında hata oluştu', 'error' );
-            } );
-    }
-
-    function findSeatingTypeId( type, capacity ) {
-        const type_match = currentSeatingTypes.find( t => t.seat_type === type && t.capacity === capacity );
-        return type_match ? type_match.id : 1; // Default to first type if not found
-    }
-
-    function updateCanvasSettings() {
-        if ( !visualEditor ) return;
-
-        const width = parseInt( document.getElementById( 'canvas-width' ).value );
-        const height = parseInt( document.getElementById( 'canvas-height' ).value );
-        const gridSize = parseInt( document.getElementById( 'grid-size' ).value );
-
-        // Update visual editor settings
-        visualEditor.config.width = width;
-        visualEditor.config.height = height;
-        visualEditor.config.gridSize = gridSize;
-
-        // Recreate canvas
-        const container = document.getElementById( 'visual-seating-editor' );
-        container.innerHTML = '';
-        initializeVisualEditor();
-
-        showNotification( 'Canvas ayarları güncellendi', 'success' );
-    }
-
-    function zoomIn() {
-        if ( visualEditor ) visualEditor.zoomIn();
-    }
-
-    function zoomOut() {
-        if ( visualEditor ) visualEditor.zoomOut();
-    }
-
-    function resetZoom() {
-        if ( visualEditor ) visualEditor.zoomReset();
-    }
-
-    function toggleGrid() {
-        if ( !visualEditor ) return;
-
-        visualEditor.gridVisible = !visualEditor.gridVisible;
-
-        // Update button style
-        const btn = document.getElementById( 'toggle-grid-btn' );
-        if ( visualEditor.gridVisible ) {
-            btn.classList.add( 'btn-shadcn-default' );
-            btn.classList.remove( 'btn-shadcn-outline' );
-            visualEditor.gridCanvas.style.display = 'block';
-        } else {
-            btn.classList.remove( 'btn-shadcn-default' );
-            btn.classList.add( 'btn-shadcn-outline' );
-            visualEditor.gridCanvas.style.display = 'none';
-        }
-    }
-
-    function clearCanvas() {
-        if ( visualEditor && confirm( 'Tüm oturumları silmek istediğinizden emin misiniz?' ) ) {
-            visualEditor.seatings = [];
-            visualEditor.draw();
-            updateCapacityInfo();
-        }
-    }
-
-    function duplicateSelected() {
-        if ( !visualEditor || !visualEditor.selectedSeating ) {
-            showNotification( 'Önce bir oturum seçin', 'info' );
-            return;
-        }
-
-        visualEditor.duplicateSeating( visualEditor.selectedSeating );
-        updateCapacityInfo();
-        showNotification( 'Oturum çoğaltıldı', 'success' );
-    }
-
-    // Alignment functions
-    function alignLeft() {
-        if ( !visualEditor ) return;
-        visualEditor.alignLeft();
-        showNotification( 'Sola hizalandı', 'success' );
-    }
-
-    function alignRight() {
-        if ( !visualEditor ) return;
-        visualEditor.alignRight();
-        showNotification( 'Sağa hizalandı', 'success' );
-    }
-
-    function alignTop() {
-        if ( !visualEditor ) return;
-        visualEditor.alignTop();
-        showNotification( 'Üste hizalandı', 'success' );
-    }
-
-    function alignBottom() {
-        if ( !visualEditor ) return;
-        visualEditor.alignBottom();
-        showNotification( 'Alta hizalandı', 'success' );
-    }
-
-    function alignCenter() {
-        if ( !visualEditor ) return;
-        visualEditor.alignCenter();
-        showNotification( 'Ortaya hizalandı', 'success' );
-    }
-
-    function alignMiddle() {
-        if ( !visualEditor ) return;
-        visualEditor.alignMiddle();
-        showNotification( 'Dikey ortalandı', 'success' );
-    }
-
-    // Distribution functions
-    function distributeHorizontally() {
-        if ( !visualEditor ) return;
-        if ( visualEditor.seatings.length < 3 ) {
-            showNotification( 'En az 3 oturum gerekli', 'warning' );
-            return;
-        }
-        visualEditor.distributeHorizontally();
-        showNotification( 'Yatay dağıtıldı', 'success' );
-    }
-
-    function distributeVertically() {
-        if ( !visualEditor ) return;
-        if ( visualEditor.seatings.length < 3 ) {
-            showNotification( 'En az 3 oturum gerekli', 'warning' );
-            return;
-        }
-        visualEditor.distributeVertically();
-        showNotification( 'Dikey dağıtıldı', 'success' );
-    }
-
-    function saveAsTemplate() {
-        if ( !visualEditor || visualEditor.seatings.length === 0 ) {
-            showNotification( 'Kaydetmek için en az bir oturum ekleyin', 'warning' );
-            return;
-        }
-        openSaveTemplateModal();
-    }
-
-    function openSaveTemplateModal() {
-        document.getElementById( 'save-template-modal' ).classList.remove( 'hidden' );
-        document.getElementById( 'save-template-modal' ).classList.add( 'flex' );
-    }
-
-    function closeSaveTemplateModal() {
-        document.getElementById( 'save-template-modal' ).classList.add( 'hidden' );
-        document.getElementById( 'save-template-modal' ).classList.remove( 'flex' );
-        document.getElementById( 'save-template-form' ).reset();
-    }
-
-    document.getElementById( 'save-template-form' ).addEventListener( 'submit', function ( e ) {
-        e.preventDefault();
-
-        const data = {
-            name: document.getElementById( 'template-name' ).value,
-            description: document.getElementById( 'template-description' ).value,
-            category: document.getElementById( 'template-category' ).value
-        };
-
-        fetch( `/event/{{ event.id }}/template/save`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify( data )
-        } )
-            .then( response => response.json() )
-            .then( result => {
-                if ( result.success ) {
-                    showNotification( 'Şablon başarıyla kaydedildi!', 'success' );
-                    closeSaveTemplateModal();
-                } else {
-                    showNotification( 'Şablon kaydetme hatası: ' + result.message, 'error' );
-                }
-            } )
-            .catch( error => {
-                console.error( 'Error saving template:', error );
-                showNotification( 'Şablon kaydetme sırasında hata oluştu', 'error' );
-            } );
-    } );
-
-    function openTemplateModal() {
-        document.getElementById( 'template-modal' ).classList.remove( 'hidden' );
-        document.getElementById( 'template-modal' ).classList.add( 'flex' );
-        loadTemplateList();
-    }
-
-    function closeTemplateModal() {
-        document.getElementById( 'template-modal' ).classList.add( 'hidden' );
-        document.getElementById( 'template-modal' ).classList.remove( 'flex' );
-    }
-
-    function loadTemplateList() {
-        fetch( '/template/api/list' )
-            .then( response => response.json() )
-            .then( data => {
-                const templateList = document.getElementById( 'template-list' );
-                
-                if ( !data.templates || data.templates.length === 0 ) {
-                    templateList.innerHTML = `
-                        <div class="text-center py-8">
-                            <i class="fas fa-inbox text-4xl text-slate-300 dark:text-slate-600 mb-3"></i>
-                            <p class="text-slate-600 dark:text-slate-400">Henüz kayıtlı şablon yok</p>
-                        </div>
-                    `;
-                    return;
-                }
-
-                templateList.innerHTML = data.templates.map( template => `
-                    <div class="flex items-center justify-between p-4 border border-slate-200 rounded-lg hover:border-primary transition dark:border-slate-700">
-                        <div class="flex-1">
-                            <h4 class="font-semibold text-slate-900 dark:text-white">${template.name}</h4>
-                            <p class="text-sm text-slate-600 dark:text-slate-400">${template.description || 'Açıklama yok'}</p>
-                            <div class="flex items-center gap-3 mt-2">
-                                <span class="text-xs px-2 py-1 rounded bg-primary/10 text-primary">${template.category || 'Genel'}</span>
-                                <span class="text-xs text-slate-500">${template.seating_count || 0} oturum</span>
-                            </div>
-                        </div>
-                        <button type="button" onclick="loadFromTemplate(${template.id})" class="btn-shadcn btn-shadcn-sm btn-shadcn-default">
-                            <i class="fas fa-download"></i>
-                            Yükle
+            </div>
+            <div class="card-shadcn-content space-y-4">
+                <div class="grid gap-4 md:grid-cols-3">
+                    <label class="space-y-2">
+                        <span class="label-shadcn text-sm font-semibold text-slate-700 dark:text-slate-200">Sahne
+                            Genişliği (px)</span>
+                        <input type="number" id="stage-width" class="input-shadcn" value="200" min="100" max="600">
+                    </label>
+                    <label class="space-y-2">
+                        <span class="label-shadcn text-sm font-semibold text-slate-700 dark:text-slate-200">Sahne
+                            Yüksekliği (px)</span>
+                        <input type="number" id="stage-height" class="input-shadcn" value="80" min="50" max="200">
+                    </label>
+                    <div class="flex flex-wrap items-center gap-3">
+                        <button class="btn-shadcn btn-shadcn-default" id="place-stage-btn">
+                            <i class="fas fa-plus"></i>
+                            <span>Sahneyi Yerleştir</span>
+                        </button>
+                        <button class="btn-shadcn btn-shadcn-outline" id="confirm-stage-btn" style="display:none;">
+                            <i class="fas fa-check"></i>
+                            <span>Onayla ve Devam Et</span>
                         </button>
                     </div>
-                `).join( '' );
-            } )
-            .catch( error => {
-                console.error( 'Error loading templates:', error );
-                showNotification( 'Şablonlar yüklenemedi', 'error' );
-            } );
+                </div>
+                <p
+                    class="rounded-xl border border-dashed border-slate-200 bg-slate-50 p-4 text-sm text-slate-600 dark:border-slate-800 dark:bg-slate-900/50 dark:text-slate-300">
+                    Sahneyi yerleştirmek için kanvas üzerinde istediğin noktayı tıkla. Onayladıktan sonra alan
+                    yapılandırmasına geçebilirsin.
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <div class="setup-wizard" id="step-2">
+        <div class="card-shadcn">
+            <div class="card-shadcn-header pb-4">
+                <div class="flex items-center gap-3">
+                    <span
+                        class="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-blue-500/10 text-blue-500">
+                        <i class="fas fa-table"></i>
+                    </span>
+                    <div>
+                        <h2 class="text-lg font-semibold text-slate-900 dark:text-white">Adım 2: Alan Yapılandırması
+                        </h2>
+                        <p class="text-sm text-slate-500 dark:text-slate-400">Masa sayısını ve ızgara yoğunluğunu
+                            belirle.</p>
+                    </div>
+                </div>
+            </div>
+            <div class="card-shadcn-content space-y-4">
+                <div class="grid gap-4 md:grid-cols-3">
+                    <label class="space-y-2">
+                        <span class="label-shadcn text-sm font-semibold text-slate-700 dark:text-slate-200">Toplam Masa
+                            Sayısı</span>
+                        <input type="number" id="total-tables" class="input-shadcn" value="20" min="1" max="100">
+                    </label>
+                    <label class="space-y-2">
+                        <span class="label-shadcn text-sm font-semibold text-slate-700 dark:text-slate-200">Izgara
+                            Aralığı (px)</span>
+                        <input type="number" id="grid-size" class="input-shadcn" value="50" min="25" max="100">
+                    </label>
+                    <label
+                        class="flex items-center gap-3 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-medium text-slate-600 dark:border-slate-800 dark:bg-slate-900/60 dark:text-slate-300">
+                        <input class="h-4 w-4 rounded border-slate-300 text-primary focus:ring-primary" type="checkbox"
+                            id="show-grid" checked>
+                        <span>Kılavuz çizgilerini göster</span>
+                    </label>
+                </div>
+
+                <div class="flex flex-wrap gap-3">
+                    <button class="btn-shadcn btn-shadcn-default" id="configure-grid-btn">
+                        <i class="fas fa-cog"></i>
+                        <span>Alanı Oluştur</span>
+                    </button>
+                    <button class="btn-shadcn btn-shadcn-default" id="confirm-grid-btn" style="display:none;">
+                        <i class="fas fa-check"></i>
+                        <span>Devam Et</span>
+                    </button>
+                    <button class="btn-shadcn btn-shadcn-ghost" id="back-to-stage-btn">
+                        <i class="fas fa-arrow-left"></i>
+                        <span>Önceki Adım</span>
+                    </button>
+                </div>
+
+                <div id="grid-info"
+                    class="hidden rounded-xl border border-blue-200 bg-blue-50 p-4 text-sm text-blue-700 dark:border-blue-900 dark:bg-blue-950/40 dark:text-blue-200">
+                    <strong class="block text-blue-800 dark:text-blue-100">Alan Bilgisi</strong>
+                    <div id="canvas-dimensions" class="mt-2 leading-relaxed"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="setup-wizard" id="step-3">
+        <div class="card-shadcn">
+            <div class="card-shadcn-header pb-4">
+                <div class="flex items-center gap-3">
+                    <span
+                        class="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-500">
+                        <i class="fas fa-chair"></i>
+                    </span>
+                    <div>
+                        <h2 class="text-lg font-semibold text-slate-900 dark:text-white">Adım 3: Koltuk Yerleşimi</h2>
+                        <p class="text-sm text-slate-500 dark:text-slate-400">Koltuk tiplerini seç ve kanvas üzerine
+                            yerleştir.</p>
+                    </div>
+                </div>
+            </div>
+            <div class="card-shadcn-content space-y-4">
+                <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+                    <div class="flex flex-wrap gap-2 lg:max-w-3xl">
+                        {% for type in seating_types %}
+                        <button class="btn-shadcn btn-shadcn-outline seating-type-btn"
+                            style="background-color: {{ type.color_code }}; color: #fff; border-color: rgba(255,255,255,0.4);"
+                            data-type-id="{{ type.id }}" data-type-name="{{ type.name }}"
+                            data-seat-type="{{ type.seat_type }}" data-capacity="{{ type.capacity }}"
+                            data-color="{{ type.color_code }}">
+                            <i class="fas fa-{{ 'table' if type.seat_type == 'table' else 'chair' }}"></i>
+                            {{ type.name }} ({{ type.capacity }})
+                        </button>
+                        {% endfor %}
+                    </div>
+                    <div class="flex flex-wrap gap-2">
+                        <button class="btn-shadcn btn-shadcn-outline" id="delete-selected-btn" disabled>
+                            <i class="fas fa-trash"></i>
+                            <span>Seçileni Sil</span>
+                        </button>
+                        <button class="btn-shadcn btn-shadcn-destructive" id="clear-all-btn">
+                            <i class="fas fa-broom"></i>
+                            <span>Tümünü Temizle</span>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="flex flex-wrap gap-3">
+                    <button class="btn-shadcn btn-shadcn-ghost" id="back-to-grid-btn">
+                        <i class="fas fa-arrow-left"></i>
+                        <span>Önceki Adım</span>
+                    </button>
+                    <button class="btn-shadcn btn-shadcn-default" id="save-layout-btn">
+                        <i class="fas fa-save"></i>
+                        <span>Yerleşimi Kaydet</span>
+                    </button>
+                </div>
+
+                <div id="layout-info"
+                    class="rounded-xl border border-dashed border-slate-200 bg-slate-50 p-4 text-sm text-slate-600 dark:border-slate-800 dark:bg-slate-900/50 dark:text-slate-300">
+                    <strong class="text-slate-800 dark:text-slate-100">İpuçları</strong>
+                    <ul class="mt-2 list-disc space-y-1 pl-5">
+                        <li>Bir koltuk türü seç ve kanvas üzerinde tıklayarak yerleştir.</li>
+                        <li>Koltukları sürükleyerek hizalayabilir, grid açıkken otomatik hizalama kullanabilirsin.</li>
+                        <li>Bir öğeyi seçmek için üzerine tıkla, silmek için “Seçileni Sil” butonunu kullan.</li>
+                        <li>Yerleşimi kaydettiğinde etkinlik ana sayfasına yönlendirileceksin.</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card-shadcn">
+        <div class="card-shadcn-header pb-4">
+            <h2 class="text-lg font-semibold text-slate-900 dark:text-white">Kanvas Önizleme</h2>
+            <p class="text-sm text-slate-500 dark:text-slate-400">Sahne ve koltuk yerleşimlerini gerçek zamanlı olarak
+                düzenle.</p>
+        </div>
+        <div class="card-shadcn-content">
+            <div
+                class="overflow-auto rounded-xl border border-dashed border-slate-200 bg-slate-100/60 p-4 dark:border-slate-800 dark:bg-slate-900/30">
+                <div id="seating-canvas" class="grid-enabled"></div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Global State
+    let currentStep = 1;
+    let stageElement = null;
+    let selectedSeatingType = null;
+    let selectedSeat = null;
+    let seatCount = 1;
+    let canvasWidth = 800;
+    let canvasHeight = 600;
+    let gridSize = 50;
+    let snapToGrid = true;
+
+    // Dragging state
+    let isDragging = false;
+    let isResizing = false;
+    let dragOffsetX = 0;
+    let dragOffsetY = 0;
+    let dragElement = null;
+
+    const canvas = document.getElementById( 'seating-canvas' );
+
+    // Initialize canvas
+    function initCanvas( width, height ) {
+        canvasWidth = width;
+        canvasHeight = height;
+        canvas.style.width = width + 'px';
+        canvas.style.height = height + 'px';
     }
 
-    function loadFromTemplate( templateId ) {
-        if ( visualEditor.seatings.length > 0 ) {
-            if ( !confirm( 'Mevcut düzen silinecek. Devam etmek istiyor musunuz?' ) ) {
-                return;
-            }
+    // Initial size
+    initCanvas( 800, 600 );
+
+    // Step Navigation
+    function showStep( step ) {
+        document.querySelectorAll( '.setup-wizard' ).forEach( el => el.classList.remove( 'active' ) );
+        document.querySelectorAll( '.step' ).forEach( el => {
+            el.classList.remove( 'active' );
+            el.classList.remove( 'completed' );
+        } );
+
+        document.getElementById( `step-${step}` ).classList.add( 'active' );
+        document.getElementById( `step-${step}-indicator` ).classList.add( 'active' );
+
+        for ( let i = 1; i < step; i++ ) {
+            document.getElementById( `step-${i}-indicator` ).classList.add( 'completed' );
         }
 
-        // Show loading state
-        showNotification( 'Şablon yükleniyor...', 'info' );
+        currentStep = step;
+    }
 
-        fetch( `/event/template/${templateId}/load`, {
-            method: 'POST'
+    // Snap to grid helper
+    function snapToGridPosition( value ) {
+        if ( !snapToGrid ) return value;
+        return Math.round( value / gridSize ) * gridSize;
+    }
+
+    // ==================== STEP 1: Stage Placement ====================
+
+    let isPlacingStage = false;
+
+    document.getElementById( 'place-stage-btn' ).addEventListener( 'click', function () {
+        const width = parseInt( document.getElementById( 'stage-width' ).value );
+        const height = parseInt( document.getElementById( 'stage-height' ).value );
+
+        if ( stageElement ) {
+            stageElement.remove();
+        }
+
+        stageElement = document.createElement( 'div' );
+        stageElement.className = 'stage placing';
+        stageElement.style.width = width + 'px';
+        stageElement.style.height = height + 'px';
+        stageElement.innerHTML = '<i class="fas fa-theater-masks me-2"></i>SAHNE';
+        stageElement.style.left = '50px';
+        stageElement.style.top = '50px';
+
+        canvas.appendChild( stageElement );
+        isPlacingStage = true;
+
+        alert( 'Sahneyi yerleştirmek için tuval üzerinde bir yere tıklayın' );
+    } );
+
+    document.getElementById( 'confirm-stage-btn' ).addEventListener( 'click', function () {
+        if ( !stageElement ) {
+            alert( 'Önce sahneyi yerleştirin!' );
+            return;
+        }
+        stageElement.classList.remove( 'placing' );
+        isPlacingStage = false;
+        showStep( 2 );
+    } );
+
+    // ==================== STEP 2: Grid Configuration ====================
+
+    document.getElementById( 'show-grid' ).addEventListener( 'change', function () {
+        if ( this.checked ) {
+            canvas.classList.add( 'grid-enabled' );
+        } else {
+            canvas.classList.remove( 'grid-enabled' );
+        }
+        snapToGrid = this.checked;
+    } );
+
+    document.getElementById( 'grid-size' ).addEventListener( 'change', function () {
+        gridSize = parseInt( this.value );
+        canvas.style.backgroundSize = `${gridSize}px ${gridSize}px`;
+    } );
+
+    document.getElementById( 'configure-grid-btn' ).addEventListener( 'click', function () {
+        const totalTables = parseInt( document.getElementById( 'total-tables' ).value );
+        gridSize = parseInt( document.getElementById( 'grid-size' ).value );
+
+        // Calculate optimal canvas size based on table count
+        // Assuming roughly sqrt(n) tables per row
+        const tablesPerRow = Math.ceil( Math.sqrt( totalTables ) );
+        const tableSize = 60; // Approximate table size
+        const margin = 100; // Margin around canvas
+
+        canvasWidth = Math.max( 800, ( tablesPerRow * tableSize ) + ( tablesPerRow * gridSize ) + margin );
+        canvasHeight = Math.max( 600, canvasWidth * 0.75 );
+
+        initCanvas( canvasWidth, canvasHeight );
+        canvas.style.backgroundSize = `${gridSize}px ${gridSize}px`;
+
+        document.getElementById( 'grid-info' ).classList.remove( 'hidden' );
+        document.getElementById( 'canvas-dimensions' ).innerHTML = `
+            <strong>Alan Boyutu:</strong> ${canvasWidth}px × ${canvasHeight}px<br>
+            <strong>Izgara Boyutu:</strong> ${gridSize}px<br>
+            <strong>Maksimum Masa:</strong> ${totalTables}
+        `;
+
+        document.getElementById( 'confirm-grid-btn' ).style.display = 'inline-block';
+    } );
+
+    document.getElementById( 'confirm-grid-btn' ).addEventListener( 'click', function () {
+        showStep( 3 );
+    } );
+
+    document.getElementById( 'back-to-stage-btn' ).addEventListener( 'click', function () {
+        showStep( 1 );
+    } );
+
+    // ==================== STEP 3: Seating Layout ====================
+
+    document.querySelectorAll( '.seating-type-btn' ).forEach( btn => {
+        btn.addEventListener( 'click', function () {
+            document.querySelectorAll( '.seating-type-btn' ).forEach( b => {
+                b.style.border = '2px solid rgba(0,0,0,0.2)';
+            } );
+            this.style.border = '3px solid #ffc107';
+
+            selectedSeatingType = {
+                id: this.dataset.typeId,
+                name: this.dataset.typeName,
+                seatType: this.dataset.seatType,
+                capacity: this.dataset.capacity,
+                color: this.dataset.color
+            };
+        } );
+    } );
+
+    document.getElementById( 'back-to-grid-btn' ).addEventListener( 'click', function () {
+        showStep( 2 );
+    } );
+
+    document.getElementById( 'delete-selected-btn' ).addEventListener( 'click', function () {
+        if ( selectedSeat ) {
+            selectedSeat.remove();
+            selectedSeat = null;
+            this.disabled = true;
+        }
+    } );
+
+    document.getElementById( 'clear-all-btn' ).addEventListener( 'click', function () {
+        if ( confirm( 'Tüm koltukları silmek istediğinizden emin misiniz?' ) ) {
+            document.querySelectorAll( '.seat' ).forEach( seat => seat.remove() );
+            seatCount = 1;
+            selectedSeat = null;
+            document.getElementById( 'delete-selected-btn' ).disabled = true;
+        }
+    } );
+
+    document.getElementById( 'save-layout-btn' ).addEventListener( 'click', function () {
+        const seats = [];
+        document.querySelectorAll( '.seat' ).forEach( seat => {
+            seats.push( {
+                seating_type_id: seat.dataset.typeId,
+                seat_number: seat.textContent,
+                position_x: parseInt( seat.style.left ),
+                position_y: parseInt( seat.style.top ),
+                width: parseInt( seat.style.width ) || 60,
+                height: parseInt( seat.style.height ) || 40,
+                color_code: seat.style.backgroundColor || seat.dataset.color
+            } );
+        } );
+
+        const stageData = stageElement ? {
+            width: parseInt( stageElement.style.width ),
+            height: parseInt( stageElement.style.height ),
+            position_x: parseInt( stageElement.style.left ),
+            position_y: parseInt( stageElement.style.top )
+        } : null;
+
+        const layoutData = {
+            seats: seats,
+            stage: stageData,
+            stage_position: 'top',
+            canvas_width: canvasWidth,
+            canvas_height: canvasHeight,
+            grid_size: gridSize
+        };
+
+        console.log( '📤 Gönderilen veri:', layoutData );
+
+        fetch( "{{ url_for('event.save_layout', event_id=event.id) }}", {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify( layoutData )
         } )
             .then( response => response.json() )
-            .then( result => {
-                if ( result.success && visualEditor ) {
-                    console.log( '📥 Şablon verisi:', result.data );
-                    
-                    // Clear existing seatings
-                    visualEditor.seatings = [];
-                    
-                    // Update canvas settings
-                    if ( result.data.canvas_width ) {
-                        document.getElementById( 'canvas-width' ).value = result.data.canvas_width;
-                        visualEditor.config.width = result.data.canvas_width;
-                    }
-                    if ( result.data.canvas_height ) {
-                        document.getElementById( 'canvas-height' ).value = result.data.canvas_height;
-                        visualEditor.config.height = result.data.canvas_height;
-                    }
-                    if ( result.data.grid_size ) {
-                        document.getElementById( 'grid-size' ).value = result.data.grid_size;
-                        visualEditor.config.gridSize = result.data.grid_size;
-                    }
-                    
-                    // Update stage position
-                    if ( result.data.stage_position ) {
-                        visualEditor.config.stagePosition = result.data.stage_position;
-                        visualEditor.positionStage();
-                    }
-                    
-                    // Load seatings
-                    if ( result.data.seatings && result.data.seatings.length > 0 ) {
-                        const seatingsData = result.data.seatings.map( s => ({
-                            type: s.type || 'table',
-                            x: s.position_x || 100,
-                            y: s.position_y || 100,
-                            width: s.width || 60,
-                            height: s.height || 40,
-                            capacity: s.capacity || 4,
-                            name: s.seat_number || `M${s.seating_type_id}`,
-                            color: s.color_code || '#3498db',
-                            icon: '🪑'
-                        }));
-                        
-                        visualEditor.loadSeatingsData( seatingsData );
-                    }
-                    
-                    visualEditor.draw();
-                    updateCapacityInfo();
-                    showNotification( 'Şablon başarıyla yüklendi!', 'success' );
-                    closeTemplateModal();
+            .then( data => {
+                console.log( '📥 Sunucu yanıtı:', data );
+                if ( data.success ) {
+                    alert( 'Yerleşim planı başarıyla kaydedildi!' );
+                    window.location.href = "{{ url_for('event.index') }}";
                 } else {
-                    showNotification( 'Şablon yükleme hatası: ' + ( result.message || 'Bilinmeyen hata' ), 'error' );
+                    alert( 'Hata: ' + ( data.message || 'Bilinmeyen hata' ) );
                 }
             } )
             .catch( error => {
-                console.error( 'Error loading template:', error );
-                showNotification( 'Şablon yükleme sırasında hata oluştu', 'error' );
+                console.error( '❌ Kayıt hatası:', error );
+                alert( 'Kayıt sırasında hata oluştu: ' + error.message );
             } );
-    }
+    } );
 
-    function showNotification( message, type = 'info' ) {
-        // Simple notification - you might want to use a proper toast library
-        const notification = document.createElement( 'div' );
-        notification.className = `fixed top-4 right-4 z-50 p-4 rounded-lg shadow-lg ${type === 'success' ? 'bg-green-500 text-white' :
-            type === 'error' ? 'bg-red-500 text-white' :
-                'bg-blue-500 text-white'
-            }`;
-        notification.textContent = message;
+    // ==================== Canvas Interactions ====================
 
-        document.body.appendChild( notification );
+    canvas.addEventListener( 'click', function ( e ) {
+        const rect = this.getBoundingClientRect();
+        let x = e.clientX - rect.left;
+        let y = e.clientY - rect.top;
 
-        setTimeout( () => {
-            notification.remove();
-        }, 3000 );
-    }
+        // Step 1: Place stage
+        if ( isPlacingStage && stageElement ) {
+            x = snapToGridPosition( x - parseInt( stageElement.style.width ) / 2 );
+            y = snapToGridPosition( y - parseInt( stageElement.style.height ) / 2 );
 
-    function updateStatusInfo( status ) {
-        const statusText = document.getElementById( 'status-text' );
-        const statusDiv = statusText.closest( 'div' );
+            stageElement.style.left = x + 'px';
+            stageElement.style.top = y + 'px';
 
-        // Remove all status classes
-        statusDiv.className = statusDiv.className.replace( /bg-\w+-\d+|border-\w+-\d+|text-\w+-\d+|dark:bg-\w+-\d+|dark:border-\w+-\d+|dark:text-\w+-\d+/g, '' );
+            document.getElementById( 'confirm-stage-btn' ).style.display = 'inline-block';
+            isPlacingStage = false;
+            stageElement.classList.remove( 'placing' );
 
-        let text = '';
-        let classes = '';
-
-        switch ( status ) {
-            case 'draft':
-                text = 'Etkinlik taslak aşamasında';
-                classes = 'bg-amber-50 border border-amber-200 text-amber-700 dark:bg-amber-500/10 dark:border-amber-500/40 dark:text-amber-300';
-                break;
-            case 'active':
-                text = 'Etkinlik aktif ve rezervasyona açık';
-                classes = 'bg-green-50 border border-green-200 text-green-700 dark:bg-green-500/10 dark:border-green-500/40 dark:text-green-300';
-                break;
-            case 'completed':
-                text = 'Etkinlik başarıyla tamamlandı';
-                classes = 'bg-blue-50 border border-blue-200 text-blue-700 dark:bg-blue-500/10 dark:border-blue-500/40 dark:text-blue-300';
-                break;
-            case 'cancelled':
-                text = 'Etkinlik iptal edildi';
-                classes = 'bg-red-50 border border-red-200 text-red-700 dark:bg-red-500/10 dark:border-red-500/40 dark:text-red-300';
-                break;
-        }
-
-        statusText.textContent = text;
-        statusDiv.className += ' ' + classes;
-    }
-
-    // Visual Editor Enhancement Functions
-    function undoAction() {
-        if ( visualEditor && visualEditor.undo() ) {
-            updateUndoRedoButtons();
-            showNotification( 'İşlem geri alındı', 'success' );
-        } else {
-            showNotification( 'Geri alınacak işlem yok', 'info' );
-        }
-    }
-
-    function redoAction() {
-        if ( visualEditor && visualEditor.redo() ) {
-            updateUndoRedoButtons();
-            showNotification( 'İşlem ileri alındı', 'success' );
-        } else {
-            showNotification( 'İleri alınacak işlem yok', 'info' );
-        }
-    }
-
-    function autoArrange() {
-        if ( visualEditor ) {
-            visualEditor.autoArrange();
-            updateUndoRedoButtons();
-            showNotification( 'Otomatik düzenleme tamamlandı', 'success' );
-        }
-    }
-
-    function resolveCollisions() {
-        if ( visualEditor && visualEditor.selectedSeating ) {
-            const success = visualEditor.resolveCollisions( visualEditor.selectedSeating );
-            if ( success ) {
-                visualEditor.draw();
-                showNotification( 'Çakışma çözüldü', 'success' );
-            } else {
-                showNotification( 'Çakışma çözülemedi', 'warning' );
-            }
-        } else {
-            showNotification( 'Önce bir oturum seçin', 'info' );
-        }
-    }
-
-    function updateUndoRedoButtons() {
-        const undoBtn = document.getElementById( 'undo-btn' );
-        const redoBtn = document.getElementById( 'redo-btn' );
-
-        // Null check - buttons might not exist yet
-        if ( !undoBtn || !redoBtn ) {
+            makeDraggable( stageElement );
+            makeResizable( stageElement );
             return;
         }
 
-        if ( visualEditor ) {
-            undoBtn.disabled = !visualEditor.canUndo();
-            redoBtn.disabled = !visualEditor.canRedo();
-
-            if ( undoBtn.disabled ) {
-                undoBtn.classList.add( 'opacity-50', 'cursor-not-allowed' );
-            } else {
-                undoBtn.classList.remove( 'opacity-50', 'cursor-not-allowed' );
-            }
-
-            if ( redoBtn.disabled ) {
-                redoBtn.classList.add( 'opacity-50', 'cursor-not-allowed' );
-            } else {
-                redoBtn.classList.remove( 'opacity-50', 'cursor-not-allowed' );
-            }
-        }
-    }
-
-    // Seçili oturum bilgilerini güncelle
-    function updateSelectedSeatingInfo() {
-        const panel = document.getElementById( 'selected-seating-panel' );
-        
-        if ( !visualEditor || ( !visualEditor.selectedSeating && ( !visualEditor.selectedSeatings || visualEditor.selectedSeatings.length === 0 ) ) ) {
-            panel.style.display = 'none';
-            return;
-        }
-
-        panel.style.display = 'block';
-
-        // Multi-select durumu
-        if ( visualEditor.selectedSeatings && visualEditor.selectedSeatings.length > 1 ) {
-            document.getElementById( 'selected-name' ).textContent = `${visualEditor.selectedSeatings.length} Oturum`;
-            document.getElementById( 'selected-type' ).textContent = 'Çoklu Seçim';
-            
-            const totalCapacity = visualEditor.selectedSeatings.reduce( ( sum, s ) => sum + ( s.capacity || 0 ), 0 );
-            document.getElementById( 'selected-capacity' ).textContent = totalCapacity;
-            
-            document.getElementById( 'selected-position' ).textContent = '-';
-            document.getElementById( 'selected-size' ).textContent = '-';
-            
-            const colorBox = document.getElementById( 'selected-color-box' );
-            colorBox.style.background = 'linear-gradient(45deg, #3498db, #9b59b6)';
-            document.getElementById( 'selected-color-code' ).textContent = 'Çoklu';
-        } else {
-            // Single select
-            const seating = visualEditor.selectedSeating;
-            document.getElementById( 'selected-name' ).textContent = seating.name || '-';
-            document.getElementById( 'selected-type' ).textContent = seating.type || '-';
-            document.getElementById( 'selected-capacity' ).textContent = seating.capacity || '-';
-            document.getElementById( 'selected-position' ).textContent = `${Math.round(seating.x)}, ${Math.round(seating.y)}`;
-            document.getElementById( 'selected-size' ).textContent = `${seating.width} × ${seating.height}`;
-            
-            const colorBox = document.getElementById( 'selected-color-box' );
-            colorBox.style.background = seating.color || '#3498db';
-            document.getElementById( 'selected-color-code' ).textContent = seating.color || '#3498db';
-        }
-    }
-
-    // Seçili oturumu düzenle
-    function editSelectedSeating() {
-        if ( !visualEditor || !visualEditor.selectedSeating ) {
-            showNotification( 'Önce bir oturum seçin', 'info' );
-            return;
-        }
-
-        if ( visualEditor.selectedSeatings && visualEditor.selectedSeatings.length > 1 ) {
-            showNotification( 'Çoklu düzenleme için tek oturum seçin', 'info' );
-            return;
-        }
-
-        const seating = visualEditor.selectedSeating;
-        
-        // Modal'ı doldur
-        document.getElementById( 'edit-seating-name' ).value = seating.name || '';
-        document.getElementById( 'edit-seating-capacity' ).value = seating.capacity || 1;
-        document.getElementById( 'edit-seating-width' ).value = seating.width || 60;
-        document.getElementById( 'edit-seating-height' ).value = seating.height || 40;
-        document.getElementById( 'edit-seating-x' ).value = Math.round( seating.x ) || 0;
-        document.getElementById( 'edit-seating-y' ).value = Math.round( seating.y ) || 0;
-        document.getElementById( 'edit-seating-color' ).value = seating.color || '#3498db';
-        document.getElementById( 'edit-seating-color-text' ).value = seating.color || '#3498db';
-        document.getElementById( 'edit-seating-icon' ).value = seating.icon || '🪑';
-
-        // Modal'ı aç
-        openEditSeatingModal();
-    }
-
-    // Seçili oturumu sil
-    function deleteSelectedSeating() {
-        if ( !visualEditor || ( !visualEditor.selectedSeating && ( !visualEditor.selectedSeatings || visualEditor.selectedSeatings.length === 0 ) ) ) {
-            showNotification( 'Önce bir oturum seçin', 'info' );
-            return;
-        }
-
-        const count = ( visualEditor.selectedSeatings && visualEditor.selectedSeatings.length ) || 1;
-        const message = count > 1 
-            ? `${count} oturumu silmek istediğinizden emin misiniz?`
-            : 'Bu oturumu silmek istediğinizden emin misiniz?';
-
-        if ( !confirm( message ) ) {
-            return;
-        }
-
-        if ( visualEditor.selectedSeatings && visualEditor.selectedSeatings.length > 1 ) {
-            visualEditor.deleteSelection();
-        } else {
-            const index = visualEditor.seatings.indexOf( visualEditor.selectedSeating );
-            if ( index > -1 ) {
-                visualEditor.seatings.splice( index, 1 );
-                visualEditor.selectedSeating = null;
-                visualEditor.selectedSeatings = [];
-                visualEditor.hasUnsavedChanges = true;
-                visualEditor.saveState();
-                visualEditor.draw();
-            }
-        }
-        
-        updateCapacityInfo();
-        updateSelectedSeatingInfo();
-        showNotification( count > 1 ? `${count} oturum silindi` : 'Oturum silindi', 'success' );
-    }
-
-    // Modal fonksiyonları
-    function openEditSeatingModal() {
-        document.getElementById( 'edit-seating-modal' ).classList.remove( 'hidden' );
-        document.getElementById( 'edit-seating-modal' ).classList.add( 'flex' );
-    }
-
-    function closeEditSeatingModal() {
-        document.getElementById( 'edit-seating-modal' ).classList.add( 'hidden' );
-        document.getElementById( 'edit-seating-modal' ).classList.remove( 'flex' );
-    }
-
-    // Modal backdrop click to close
-    document.getElementById( 'edit-seating-modal' ).addEventListener( 'click', function ( e ) {
-        if ( e.target === this ) {
-            closeEditSeatingModal();
+        // Step 3: Place seats
+        if ( currentStep === 3 && selectedSeatingType && !isDragging ) {
+            createSeat( x, y );
         }
     } );
 
-    document.getElementById( 'save-template-modal' ).addEventListener( 'click', function ( e ) {
-        if ( e.target === this ) {
-            closeSaveTemplateModal();
-        }
-    } );
+    function createSeat( x, y ) {
+        const seat = document.createElement( 'div' );
+        seat.className = 'seat ' + selectedSeatingType.seatType;
 
-    document.getElementById( 'template-modal' ).addEventListener( 'click', function ( e ) {
-        if ( e.target === this ) {
-            closeTemplateModal();
-        }
-    } );
+        const size = selectedSeatingType.seatType === 'table' ? 60 : 35;
+        seat.style.width = size + 'px';
+        seat.style.height = size + 'px';
 
-    // Oturum düzenleme form submit
-    document.getElementById( 'edit-seating-form' ).addEventListener( 'submit', function ( e ) {
-        e.preventDefault();
+        x = snapToGridPosition( x - size / 2 );
+        y = snapToGridPosition( y - size / 2 );
 
-        if ( !visualEditor || !visualEditor.selectedSeating ) {
-            return;
-        }
+        seat.style.left = x + 'px';
+        seat.style.top = y + 'px';
+        seat.style.backgroundColor = selectedSeatingType.color;
+        seat.dataset.typeId = selectedSeatingType.id;
+        seat.textContent = seatCount++;
 
-        const seating = visualEditor.selectedSeating;
-        
-        // Değerleri güncelle
-        seating.name = document.getElementById( 'edit-seating-name' ).value;
-        seating.capacity = parseInt( document.getElementById( 'edit-seating-capacity' ).value );
-        seating.width = parseInt( document.getElementById( 'edit-seating-width' ).value );
-        seating.height = parseInt( document.getElementById( 'edit-seating-height' ).value );
-        seating.x = parseInt( document.getElementById( 'edit-seating-x' ).value );
-        seating.y = parseInt( document.getElementById( 'edit-seating-y' ).value );
-        seating.color = document.getElementById( 'edit-seating-color' ).value;
-        seating.icon = document.getElementById( 'edit-seating-icon' ).value;
+        canvas.appendChild( seat );
+        makeDraggable( seat );
 
-        // Canvas'ı güncelle
-        visualEditor.draw();
-        updateCapacityInfo();
-        updateSelectedSeatingInfo();
-        
-        closeEditSeatingModal();
-        showNotification( 'Oturum güncellendi', 'success' );
-    } );
-
-    // Renk input senkronizasyonu
-    document.getElementById( 'edit-seating-color' ).addEventListener( 'input', function ( e ) {
-        document.getElementById( 'edit-seating-color-text' ).value = e.target.value;
-    } );
-
-    document.getElementById( 'edit-seating-color-text' ).addEventListener( 'input', function ( e ) {
-        const color = e.target.value;
-        if ( /^#[0-9A-Fa-f]{6}$/.test( color ) ) {
-            document.getElementById( 'edit-seating-color' ).value = color;
-        }
-    } );
-
-    // Add keyboard shortcuts
-    document.addEventListener( 'keydown', function ( e ) {
-        // Modal açıksa klavye kısayollarını devre dışı bırak
-        const modalOpen = !document.getElementById( 'edit-seating-modal' ).classList.contains( 'hidden' ) ||
-                         !document.getElementById( 'save-template-modal' ).classList.contains( 'hidden' ) ||
-                         !document.getElementById( 'template-modal' ).classList.contains( 'hidden' );
-        
-        if ( modalOpen ) {
-            return;
-        }
-
-        // Ctrl/Cmd kombinasyonları
-        if ( e.ctrlKey || e.metaKey ) {
-            switch ( e.key.toLowerCase() ) {
-                case 'z':
-                    if ( !e.shiftKey ) {
-                        e.preventDefault();
-                        undoAction();
-                    }
-                    break;
-                case 'y':
-                    e.preventDefault();
-                    redoAction();
-                    break;
-                case 'd':
-                    e.preventDefault();
-                    duplicateSelected();
-                    break;
-                case 's':
-                    e.preventDefault();
-                    saveLayout();
-                    break;
+        seat.addEventListener( 'click', function ( e ) {
+            e.stopPropagation();
+            if ( selectedSeat ) {
+                selectedSeat.classList.remove( 'selected' );
             }
-            return;
-        }
-
-        // Seçili oturum varsa
-        if ( visualEditor && visualEditor.selectedSeating ) {
-            const moveSpeed = e.shiftKey ? 50 : 10;
-            let moved = false;
-
-            switch ( e.key ) {
-                case 'Delete':
-                case 'Backspace':
-                    e.preventDefault();
-                    deleteSelectedSeating();
-                    break;
-                case 'Escape':
-                    e.preventDefault();
-                    visualEditor.selectedSeating = null;
-                    visualEditor.draw();
-                    updateSelectedSeatingInfo();
-                    break;
-                case 'ArrowUp':
-                    e.preventDefault();
-                    visualEditor.selectedSeating.y -= moveSpeed;
-                    moved = true;
-                    break;
-                case 'ArrowDown':
-                    e.preventDefault();
-                    visualEditor.selectedSeating.y += moveSpeed;
-                    moved = true;
-                    break;
-                case 'ArrowLeft':
-                    e.preventDefault();
-                    visualEditor.selectedSeating.x -= moveSpeed;
-                    moved = true;
-                    break;
-                case 'ArrowRight':
-                    e.preventDefault();
-                    visualEditor.selectedSeating.x += moveSpeed;
-                    moved = true;
-                    break;
-            }
-
-            if ( moved ) {
-                // Sınırları kontrol et
-                visualEditor.selectedSeating.x = Math.max( 0, Math.min( visualEditor.selectedSeating.x, visualEditor.config.width - visualEditor.selectedSeating.width ) );
-                visualEditor.selectedSeating.y = Math.max( 0, Math.min( visualEditor.selectedSeating.y, visualEditor.config.height - visualEditor.selectedSeating.height ) );
-                
-                visualEditor.draw();
-                updateSelectedSeatingInfo();
-            }
-        }
-    } );
-
-    // Canvas click/touch event - seçim değiştiğinde bilgileri güncelle
-    if ( visualEditor && visualEditor.canvas ) {
-        visualEditor.canvas.addEventListener( 'click', function () {
-            setTimeout( updateSelectedSeatingInfo, 100 );
-        } );
-        
-        // Touch support
-        visualEditor.canvas.addEventListener( 'touchend', function () {
-            setTimeout( updateSelectedSeatingInfo, 100 );
+            this.classList.add( 'selected' );
+            selectedSeat = this;
+            document.getElementById( 'delete-selected-btn' ).disabled = false;
         } );
     }
 
-    // Touch gestures için ek destek
-    let touchStartX = 0;
-    let touchStartY = 0;
-    
-    document.addEventListener( 'touchstart', function ( e ) {
-        if ( e.target.closest( '#visual-seating-editor' ) ) {
-            touchStartX = e.touches[0].clientX;
-            touchStartY = e.touches[0].clientY;
-        }
-    }, { passive: true } );
+    function makeDraggable( element ) {
+        element.addEventListener( 'mousedown', function ( e ) {
+            if ( e.target.classList.contains( 'resize-handle' ) ) return;
 
-    document.addEventListener( 'touchmove', function ( e ) {
-        if ( e.target.closest( '#visual-seating-editor' ) && visualEditor && visualEditor.selectedSeating ) {
-            const touchX = e.touches[0].clientX;
-            const touchY = e.touches[0].clientY;
-            const deltaX = touchX - touchStartX;
-            const deltaY = touchY - touchStartY;
+            isDragging = true;
+            dragElement = this;
+            const rect = this.getBoundingClientRect();
+            const canvasRect = canvas.getBoundingClientRect();
+            dragOffsetX = e.clientX - rect.left;
+            dragOffsetY = e.clientY - rect.top;
 
-            if ( Math.abs( deltaX ) > 5 || Math.abs( deltaY ) > 5 ) {
-                visualEditor.selectedSeating.x += deltaX;
-                visualEditor.selectedSeating.y += deltaY;
-                visualEditor.draw();
-                updateSelectedSeatingInfo();
-
-                touchStartX = touchX;
-                touchStartY = touchY;
-            }
-        }
-    }, { passive: true } );
-
-    // Toggle snap settings
-    function toggleSnapToGrid( enabled ) {
-        if ( visualEditor ) {
-            visualEditor.snapToGrid = enabled;
-            console.log( '🧲 Snap to grid:', enabled );
-        }
+            this.style.cursor = 'grabbing';
+        } );
     }
 
-    function toggleSnapToObjects( enabled ) {
-        if ( visualEditor ) {
-            visualEditor.snapToObjects = enabled;
-            console.log( '🧲 Snap to objects:', enabled );
-        }
+    function makeResizable( element ) {
+        const handle = document.createElement( 'div' );
+        handle.className = 'resize-handle se';
+        element.appendChild( handle );
+
+        handle.addEventListener( 'mousedown', function ( e ) {
+            e.stopPropagation();
+            isResizing = true;
+            dragElement = element;
+        } );
     }
 
-    function toggleAlignmentGuides( enabled ) {
-        if ( visualEditor ) {
-            visualEditor.showAlignmentGuides = enabled;
-            console.log( '📏 Alignment guides:', enabled );
-        }
-    }
+    document.addEventListener( 'mousemove', function ( e ) {
+        if ( isDragging && dragElement ) {
+            const canvasRect = canvas.getBoundingClientRect();
+            let x = e.clientX - canvasRect.left - dragOffsetX;
+            let y = e.clientY - canvasRect.top - dragOffsetY;
 
-    // Auto-save listener
-    document.addEventListener( 'visualeditor:autosave', function ( e ) {
-        console.log( '💾 Auto-save triggered' );
-        const config = e.detail.configuration;
-        
-        // Show subtle notification
-        const notification = document.createElement( 'div' );
-        notification.className = 'fixed bottom-4 right-4 z-50 px-4 py-2 rounded-lg shadow-lg bg-green-500 text-white text-sm flex items-center gap-2';
-        notification.innerHTML = '<i class="fas fa-check-circle"></i> Otomatik kaydedildi';
-        document.body.appendChild( notification );
-        
-        setTimeout( () => {
-            notification.remove();
-        }, 2000 );
-        
-        // Optionally save to backend
-        // saveLayout();
+            x = snapToGridPosition( x );
+            y = snapToGridPosition( y );
+
+            x = Math.max( 0, Math.min( x, canvasWidth - dragElement.offsetWidth ) );
+            y = Math.max( 0, Math.min( y, canvasHeight - dragElement.offsetHeight ) );
+
+            dragElement.style.left = x + 'px';
+            dragElement.style.top = y + 'px';
+        }
+
+        if ( isResizing && dragElement ) {
+            const canvasRect = canvas.getBoundingClientRect();
+            let newWidth = snapToGridPosition( e.clientX - canvasRect.left - parseInt( dragElement.style.left ) );
+            let newHeight = snapToGridPosition( e.clientY - canvasRect.top - parseInt( dragElement.style.top ) );
+
+            newWidth = Math.max( 100, Math.min( newWidth, canvasWidth - parseInt( dragElement.style.left ) ) );
+            newHeight = Math.max( 50, Math.min( newHeight, canvasHeight - parseInt( dragElement.style.top ) ) );
+
+            dragElement.style.width = newWidth + 'px';
+            dragElement.style.height = newHeight + 'px';
+        }
     } );
 
-    // Initialize undo/redo buttons when editor is ready
-    document.addEventListener( 'DOMContentLoaded', function () {
-        setTimeout( function() {
-            updateUndoRedoButtons();
-            
-            // Canvas click event listener ekle
-            if ( visualEditor && visualEditor.canvas ) {
-                visualEditor.canvas.addEventListener( 'click', function () {
-                    setTimeout( updateSelectedSeatingInfo, 100 );
-                } );
-            }
-            
-            // Update selection info on multi-select
-            document.addEventListener( 'keydown', function ( e ) {
-                if ( e.key === 'Shift' || e.key === 'Control' || e.key === 'Meta' ) {
-                    setTimeout( updateSelectedSeatingInfo, 100 );
-                }
-            } );
-        }, 1000 ); // Wait for editor to initialize
+    document.addEventListener( 'mouseup', function () {
+        if ( dragElement ) {
+            dragElement.style.cursor = 'move';
+        }
+        isDragging = false;
+        isResizing = false;
+        dragElement = null;
     } );
 </script>
 {% endblock %}

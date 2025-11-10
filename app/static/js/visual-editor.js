@@ -418,6 +418,60 @@ class VisualSeatingEditor {
         const x = e.clientX - rect.left;
         const y = e.clientY - rect.top;
         
+        // Resize handling
+        if (this.isResizing && this.selectedSeating) {
+            const deltaX = x - this.resizeStart.x;
+            const deltaY = y - this.resizeStart.y;
+            
+            const minSize = 20;
+            
+            switch (this.resizeHandle.type) {
+                case 'se': // Southeast - bottom right
+                    this.selectedSeating.width = Math.max(minSize, this.resizeOriginal.width + deltaX);
+                    this.selectedSeating.height = Math.max(minSize, this.resizeOriginal.height + deltaY);
+                    break;
+                case 'sw': // Southwest - bottom left
+                    const newWidth = Math.max(minSize, this.resizeOriginal.width - deltaX);
+                    this.selectedSeating.x = this.resizeOriginal.x + (this.resizeOriginal.width - newWidth);
+                    this.selectedSeating.width = newWidth;
+                    this.selectedSeating.height = Math.max(minSize, this.resizeOriginal.height + deltaY);
+                    break;
+                case 'ne': // Northeast - top right
+                    const newHeight = Math.max(minSize, this.resizeOriginal.height - deltaY);
+                    this.selectedSeating.y = this.resizeOriginal.y + (this.resizeOriginal.height - newHeight);
+                    this.selectedSeating.width = Math.max(minSize, this.resizeOriginal.width + deltaX);
+                    this.selectedSeating.height = newHeight;
+                    break;
+                case 'nw': // Northwest - top left
+                    const newW = Math.max(minSize, this.resizeOriginal.width - deltaX);
+                    const newH = Math.max(minSize, this.resizeOriginal.height - deltaY);
+                    this.selectedSeating.x = this.resizeOriginal.x + (this.resizeOriginal.width - newW);
+                    this.selectedSeating.y = this.resizeOriginal.y + (this.resizeOriginal.height - newH);
+                    this.selectedSeating.width = newW;
+                    this.selectedSeating.height = newH;
+                    break;
+                case 'e': // East - right
+                    this.selectedSeating.width = Math.max(minSize, this.resizeOriginal.width + deltaX);
+                    break;
+                case 'w': // West - left
+                    const w = Math.max(minSize, this.resizeOriginal.width - deltaX);
+                    this.selectedSeating.x = this.resizeOriginal.x + (this.resizeOriginal.width - w);
+                    this.selectedSeating.width = w;
+                    break;
+                case 's': // South - bottom
+                    this.selectedSeating.height = Math.max(minSize, this.resizeOriginal.height + deltaY);
+                    break;
+                case 'n': // North - top
+                    const h = Math.max(minSize, this.resizeOriginal.height - deltaY);
+                    this.selectedSeating.y = this.resizeOriginal.y + (this.resizeOriginal.height - h);
+                    this.selectedSeating.height = h;
+                    break;
+            }
+            
+            this.draw();
+            return;
+        }
+        
         // Lasso selection
         if (this.isLassoSelecting) {
             this.lassoEnd = { x, y };
@@ -427,7 +481,7 @@ class VisualSeatingEditor {
         }
         
         // Update cursor based on position
-        if (!this.isDragging) {
+        if (!this.isDragging && !this.isResizing) {
             this.updateCursor(x, y);
         }
         
@@ -514,6 +568,16 @@ class VisualSeatingEditor {
             this.saveState(); // Save state after drag operation
         }
         
+        if (this.isResizing) {
+            this.isResizing = false;
+            this.resizeHandle = null;
+            this.resizeStart = null;
+            this.resizeOriginal = null;
+            this.hasUnsavedChanges = true;
+            this.saveState();
+            this.draw();
+        }
+        
         if (this.isLassoSelecting) {
             this.isLassoSelecting = false;
             this.lassoStart = null;
@@ -530,9 +594,25 @@ class VisualSeatingEditor {
         const x = touch.clientX - rect.left;
         const y = touch.clientY - rect.top;
         
+        // Check resize handle first
+        const handle = this.getHandleAt(x, y);
+        if (handle && this.selectedSeating) {
+            this.isResizing = true;
+            this.resizeHandle = handle;
+            this.resizeStart = { x, y };
+            this.resizeOriginal = {
+                x: this.selectedSeating.x,
+                y: this.selectedSeating.y,
+                width: this.selectedSeating.width,
+                height: this.selectedSeating.height
+            };
+            return;
+        }
+        
         const seating = this.getSeatingAt(x, y);
         if (seating) {
             this.selectedSeating = seating;
+            this.selectedSeatings = [seating];
             this.isDragging = true;
             this.dragOffset = {
                 x: x - seating.x,
@@ -544,11 +624,48 @@ class VisualSeatingEditor {
     
     onTouchMove(e) {
         e.preventDefault();
+        const touch = e.touches[0];
+        const rect = this.canvas.getBoundingClientRect();
+        const x = touch.clientX - rect.left;
+        const y = touch.clientY - rect.top;
+        
+        // Handle resize
+        if (this.isResizing && this.selectedSeating) {
+            const deltaX = x - this.resizeStart.x;
+            const deltaY = y - this.resizeStart.y;
+            const minSize = 20;
+            
+            switch (this.resizeHandle.type) {
+                case 'se':
+                    this.selectedSeating.width = Math.max(minSize, this.resizeOriginal.width + deltaX);
+                    this.selectedSeating.height = Math.max(minSize, this.resizeOriginal.height + deltaY);
+                    break;
+                case 'sw':
+                    const newWidth = Math.max(minSize, this.resizeOriginal.width - deltaX);
+                    this.selectedSeating.x = this.resizeOriginal.x + (this.resizeOriginal.width - newWidth);
+                    this.selectedSeating.width = newWidth;
+                    this.selectedSeating.height = Math.max(minSize, this.resizeOriginal.height + deltaY);
+                    break;
+                case 'ne':
+                    const newHeight = Math.max(minSize, this.resizeOriginal.height - deltaY);
+                    this.selectedSeating.y = this.resizeOriginal.y + (this.resizeOriginal.height - newHeight);
+                    this.selectedSeating.width = Math.max(minSize, this.resizeOriginal.width + deltaX);
+                    this.selectedSeating.height = newHeight;
+                    break;
+                case 'nw':
+                    const newW = Math.max(minSize, this.resizeOriginal.width - deltaX);
+                    const newH = Math.max(minSize, this.resizeOriginal.height - deltaY);
+                    this.selectedSeating.x = this.resizeOriginal.x + (this.resizeOriginal.width - newW);
+                    this.selectedSeating.y = this.resizeOriginal.y + (this.resizeOriginal.height - newH);
+                    this.selectedSeating.width = newW;
+                    this.selectedSeating.height = newH;
+                    break;
+            }
+            this.draw();
+            return;
+        }
+        
         if (this.isDragging && this.selectedSeating) {
-            const touch = e.touches[0];
-            const rect = this.canvas.getBoundingClientRect();
-            const x = touch.clientX - rect.left;
-            const y = touch.clientY - rect.top;
             
             // Calculate new position
             let newX = x - this.dragOffset.x;
@@ -593,6 +710,15 @@ class VisualSeatingEditor {
         e.preventDefault();
         if (this.isDragging) {
             this.isDragging = false;
+            this.hasUnsavedChanges = true;
+            this.saveState();
+        }
+        if (this.isResizing) {
+            this.isResizing = false;
+            this.resizeHandle = null;
+            this.resizeStart = null;
+            this.resizeOriginal = null;
+            this.hasUnsavedChanges = true;
             this.saveState();
         }
     }
@@ -1057,17 +1183,24 @@ class VisualSeatingEditor {
     }
     
     drawSelection(seating) {
-        // Selection border - red if collision warning, orange otherwise
-        this.ctx.strokeStyle = this.showCollisionWarning ? '#e74c3c' : '#f39c12';
-        this.ctx.lineWidth = this.showCollisionWarning ? 4 : 3;
+        // Selection border - red if collision warning, blue otherwise
+        this.ctx.strokeStyle = this.showCollisionWarning ? '#e74c3c' : '#3498db';
+        this.ctx.lineWidth = this.showCollisionWarning ? 4 : 2;
         this.ctx.strokeRect(seating.x - 2, seating.y - 2, seating.width + 4, seating.height + 4);
         
-        // Handle points
+        // Handle points - larger and more visible
         const handles = this.getSelectionHandles(seating);
-        this.ctx.fillStyle = this.showCollisionWarning ? '#e74c3c' : '#f39c12';
+        const handleSize = 8;
         
         handles.forEach(handle => {
-            this.ctx.fillRect(handle.x - 3, handle.y - 3, 6, 6);
+            // White background
+            this.ctx.fillStyle = 'white';
+            this.ctx.fillRect(handle.x - handleSize/2, handle.y - handleSize/2, handleSize, handleSize);
+            
+            // Blue border
+            this.ctx.strokeStyle = '#3498db';
+            this.ctx.lineWidth = 2;
+            this.ctx.strokeRect(handle.x - handleSize/2, handle.y - handleSize/2, handleSize, handleSize);
         });
         
         // Show collision warning text
@@ -1098,7 +1231,7 @@ class VisualSeatingEditor {
         if (!this.selectedSeating) return null;
         
         const handles = this.getSelectionHandles(this.selectedSeating);
-        const handleSize = 6;
+        const handleSize = 8; // Larger hit area
         
         for (let handle of handles) {
             if (x >= handle.x - handleSize && x <= handle.x + handleSize &&

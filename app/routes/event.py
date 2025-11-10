@@ -246,11 +246,14 @@ def save_layout(event_id):
         company_id=current_user.company_id
     ).first_or_404()
     
-    data = request.get_json()
-    print(f"🔍 save_layout called for event {event_id}")
-    print(f"📥 Received data: {data}")
-    
     try:
+        data = request.get_json()
+        if not data:
+            return jsonify({'success': False, 'message': 'Veri alınamadı'}), 400
+            
+        print(f"🔍 save_layout called for event {event_id}")
+        print(f"📥 Received data: {json.dumps(data, indent=2)}")
+        
         # Delete existing seatings
         deleted_count = EventSeating.query.filter_by(event_id=event.id).delete()
         print(f"🗑️ Deleted {deleted_count} existing seatings")
@@ -262,46 +265,63 @@ def save_layout(event_id):
         
         # Save stage position (convert string to Enum)
         stage_pos = data.get('stage_position', 'top')
-        if isinstance(stage_pos, str):
-            event.stage_position = StagePosition(stage_pos)
-        else:
-            event.stage_position = stage_pos
-        print(f"📍 Stage position: {event.stage_position.value if event.stage_position else 'None'}")
+        try:
+            if isinstance(stage_pos, str):
+                event.stage_position = StagePosition(stage_pos.upper())
+            else:
+                event.stage_position = stage_pos
+            print(f"📍 Stage position: {event.stage_position.value if event.stage_position else 'None'}")
+        except ValueError as e:
+            print(f"⚠️ Invalid stage position: {stage_pos}, using default 'TOP'")
+            event.stage_position = StagePosition.TOP
         
         # Save canvas dimensions and grid settings
-        event.canvas_width = data.get('canvas_width', 800)
-        event.canvas_height = data.get('canvas_height', 600)
-        event.grid_size = data.get('grid_size', 20)
+        event.canvas_width = int(data.get('canvas_width', 800))
+        event.canvas_height = int(data.get('canvas_height', 600))
+        event.grid_size = int(data.get('grid_size', 20))
         print(f"📐 Canvas: {event.canvas_width}x{event.canvas_height}, Grid: {event.grid_size}")
         
         # Save enhanced seatings with visual editor properties
         seats_data = data.get('seats', [])
         print(f"💺 Saving {len(seats_data)} seatings")
         
+        if not seats_data:
+            print("⚠️ No seats to save")
+        
         for idx, seat_data in enumerate(seats_data):
-            print(f"  {idx+1}. {seat_data.get('seat_number')}: type_id={seat_data.get('seating_type_id')}, pos=({seat_data.get('position_x')}, {seat_data.get('position_y')})")
-            seating = EventSeating(
-                event_id=event.id,
-                seating_type_id=seat_data['seating_type_id'],
-                seat_number=seat_data['seat_number'],
-                position_x=seat_data['position_x'],
-                position_y=seat_data['position_y'],
-                width=seat_data.get('width', 60),
-                height=seat_data.get('height', 40),
-                color_code=seat_data.get('color_code', '#3498db')
-            )
-            db.session.add(seating)
+            try:
+                print(f"  {idx+1}. {seat_data.get('seat_number')}: type_id={seat_data.get('seating_type_id')}, pos=({seat_data.get('position_x')}, {seat_data.get('position_y')})")
+                
+                seating = EventSeating(
+                    event_id=event.id,
+                    seating_type_id=int(seat_data['seating_type_id']),
+                    seat_number=str(seat_data['seat_number']),
+                    position_x=float(seat_data['position_x']),
+                    position_y=float(seat_data['position_y']),
+                    width=float(seat_data.get('width', 60)),
+                    height=float(seat_data.get('height', 40)),
+                    color_code=seat_data.get('color_code', '#3498db')
+                )
+                db.session.add(seating)
+            except Exception as seat_error:
+                print(f"❌ Error adding seat {idx+1}: {str(seat_error)}")
+                raise
         
         db.session.commit()
-        print(f"✅ Layout saved successfully!")
-        return jsonify({'success': True, 'message': 'Görsel yerleşim planı kaydedildi'})
+        print(f"✅ Layout saved successfully! Total seats: {len(seats_data)}")
+        
+        return jsonify({
+            'success': True, 
+            'message': 'Görsel yerleşim planı kaydedildi',
+            'seats_saved': len(seats_data)
+        })
         
     except Exception as e:
         db.session.rollback()
         print(f"❌ Error saving layout: {str(e)}")
         import traceback
         traceback.print_exc()
-        return jsonify({'success': False, 'message': str(e)}), 500
+        return jsonify({'success': False, 'message': f'Kayıt hatası: {str(e)}'}), 500
 
 @bp.route('/<int:event_id>/seating-config', methods=['GET', 'POST'])
 @login_required
@@ -341,7 +361,9 @@ def seating_config(event_id):
                     'capacity': s.seating_type.capacity if s.seating_type else 4,
                     'color_code': s.color_code or '#3498db',
                     'icon': s.seating_type.icon if s.seating_type else '🪑',
-                    'name': s.seating_type.name if s.seating_type else f'Masa {s.seat_number}'
+                    'name': s.seating_type.name if s.seating_type else f'Masa {s.seat_number}',
+                    'is_reserved': s.status.value == 'reserved' if hasattr(s.status, 'value') else s.status == 'reserved',
+                    'status': s.status.value if hasattr(s.status, 'value') else s.status
                 } for s in seatings],
                 'seating_types': [{
                     'id': st.id,
