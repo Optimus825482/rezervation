@@ -13,4 +13,4 @@ cmds = [
 cmds = ["echo 'Build completed'"]
 
 [start]
-cmd = "flask db upgrade && gunicorn --bind 0.0.0.0:$PORT --workers 4 --threads 2 --timeout 60 --access-logfile - --error-logfile - run:app"
+cmd = "bash -c 'python check_db.py && flask db upgrade && gunicorn --bind 0.0.0.0:$PORT --workers 4 --threads 2 --timeout 60 --access-logfile - --error-logfile - run:app'"
