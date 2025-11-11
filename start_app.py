@@ -207,15 +207,21 @@ def main():
     """Ana fonksiyon"""
     print_header("🎯 Rezervasyon Sistemi Başlatıcı")
     
-    # Kullanıcıya sor
-    print("Redis kullanmak istiyor musunuz?")
-    print("  1. Evet - Redis ile başlat (Önerilen - Yüksek performans)")
-    print("  2. Hayır - Redis olmadan başlat (Basit - Düşük kaynak)")
-    print()
+    # .env dosyasından Redis ayarını oku
+    env_file = Path('.env')
+    use_redis = False
     
-    choice = input("Seçiminiz (1/2) [1]: ").strip() or "1"
+    if env_file.exists():
+        with open(env_file, 'r', encoding='utf-8') as f:
+            for line in f:
+                if line.startswith('REDIS_ENABLED='):
+                    use_redis = line.split('=')[1].strip().lower() == 'true'
+                    break
     
-    use_redis = choice == "1"
+    if use_redis:
+        print_colored("🔴 Redis modu aktif (.env'den okundu)", Colors.OKGREEN)
+    else:
+        print_colored("📁 Filesystem modu aktif (.env'den okundu)", Colors.OKGREEN)
     
     if use_redis:
         print_header("🔧 Redis Kurulumu")
@@ -223,31 +229,15 @@ def main():
         # Docker kontrolü
         if not check_docker():
             print_colored("❌ Docker kurulu değil!", Colors.FAIL)
-            print_colored("\nDocker kurulumu için:", Colors.WARNING)
-            print_colored("  Windows: https://docs.docker.com/desktop/install/windows-install/", Colors.OKBLUE)
-            print_colored("  Mac: https://docs.docker.com/desktop/install/mac-install/", Colors.OKBLUE)
-            print_colored("  Linux: https://docs.docker.com/engine/install/", Colors.OKBLUE)
-            print()
-            
-            fallback = input("Redis olmadan devam etmek istiyor musunuz? (e/h) [e]: ").strip().lower() or "e"
-            if fallback == "e":
-                use_redis = False
-                print_colored("\n📁 Filesystem session kullanılacak", Colors.WARNING)
-            else:
-                print_colored("\n👋 Çıkılıyor...", Colors.WARNING)
-                sys.exit(0)
+            print_colored("📁 Filesystem session kullanılacak", Colors.WARNING)
+            use_redis = False
         else:
             # Redis'i kontrol et ve başlat
             if not check_redis_running():
                 if not start_redis():
-                    print_colored("\n⚠️ Redis başlatılamadı", Colors.WARNING)
-                    fallback = input("Redis olmadan devam etmek istiyor musunuz? (e/h) [e]: ").strip().lower() or "e"
-                    if fallback == "e":
-                        use_redis = False
-                        print_colored("\n📁 Filesystem session kullanılacak", Colors.WARNING)
-                    else:
-                        print_colored("\n👋 Çıkılıyor...", Colors.WARNING)
-                        sys.exit(0)
+                    print_colored("⚠️ Redis başlatılamadı", Colors.WARNING)
+                    print_colored("📁 Filesystem session kullanılacak", Colors.WARNING)
+                    use_redis = False
     else:
         print_header("📁 Filesystem Modu")
         print_colored("Redis kullanılmayacak - Basit mod aktif", Colors.OKGREEN)
