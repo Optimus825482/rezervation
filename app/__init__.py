@@ -122,7 +122,6 @@ def create_app(config_name='default'):
         
         if session_type == 'filesystem':
             # Filesystem session için setup
-            import os
             session_dir = app.config.get('SESSION_FILE_DIR', 'flask_session')
             if not os.path.isabs(session_dir):
                 session_dir = os.path.join(app.root_path, '..', session_dir)
