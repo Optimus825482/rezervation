@@ -45,7 +45,7 @@ Dashboard → New Resource → Public Repository
 - Repository: https://github.com/Optimus825482/rezervation.git
 - Branch: main
 - Build Pack: Docker Compose
-- Docker Compose File: docker-compose.prod.yml
+- Docker Compose File: docker-compose.coolify.yml
 → Create
 ```
 

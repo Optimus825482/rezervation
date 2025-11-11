@@ -1,0 +1,72 @@
+version: '3.8'
+
+services:
+  # PostgreSQL - Coolify'da ayrı servis olarak eklenecek
+  # Bu yüzden burada tanımlamıyoruz
+  
+  # Redis - Coolify'da ayrı servis olarak eklenecek
+  # Bu yüzden burada tanımlamıyoruz
+
+  # Flask Uygulaması
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile.prod
+    container_name: rezervasyon_app
+    environment:
+      - FLASK_ENV=production
+      - DATABASE_URL=${DATABASE_URL}
+      - REDIS_URL=${REDIS_URL}
+      - SECRET_KEY=${SECRET_KEY}
+      - JWT_SECRET_KEY=${JWT_SECRET_KEY}
+      - JWT_ACCESS_TOKEN_EXPIRES=${JWT_ACCESS_TOKEN_EXPIRES:-3600}
+      - UPLOAD_FOLDER=/app/app/static/uploads
+      - MAX_CONTENT_LENGTH=16777216
+      - WTF_CSRF_ENABLED=True
+      - SESSION_TYPE=redis
+      - SESSION_PERMANENT=False
+      - SESSION_USE_SIGNER=True
+    volumes:
+      - uploads_data:/app/app/static/uploads:rw
+      - ./logs:/app/logs:rw
+    restart: always
+    ports:
+      - "5000:5000"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 2G
+        reservations:
+          cpus: '1'
+          memory: 1G
+
+  # Nginx Reverse Proxy
+  nginx:
+    image: nginx:alpine
+    container_name: rezervasyon_nginx
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx/nginx.coolify.conf:/etc/nginx/nginx.conf:ro
+      - uploads_data:/app/static/uploads:ro
+    depends_on:
+      app:
+        condition: service_healthy
+    restart: always
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+# Kalıcı veri volume'leri
+volumes:
+  uploads_data:
+    driver: local
