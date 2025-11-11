@@ -49,3 +49,6 @@ app/static/uploads/logos/*
 .env.coolify.generated
 *.generated
 COOLIFY_SIFRELER.txt
+
+# Railway deployment - generated files
+RAILWAY_SIFRELER.txt
