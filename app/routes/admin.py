@@ -318,3 +318,10 @@ def delete_seating_type(type_id):
     db.session.commit()
     flash('Koltuk türü silindi.', 'success')
     return redirect(url_for('admin.seating_types'))
+
+
+@bp.route('/test-modal')
+
+def test_modal():
+    """Modal system test sayfası"""
+    return render_template('test_modal.html')

@@ -193,13 +193,15 @@
 
 {% block extra_js %}
 {{ super() }}
+<script src="/static/js/modal-helpers.js"></script>
 <script{% if g.csp_nonce %} nonce="{{ g.csp_nonce }}" {% endif %}>
     document.addEventListener( 'DOMContentLoaded', () => {
         document.querySelectorAll( '[data-seating-delete]' ).forEach( ( form ) => {
-            form.addEventListener( 'submit', ( event ) => {
-                const confirmed = window.confirm( 'Bu koltuk türünü silmek istediğine emin misin?' );
-                if ( !confirmed ) {
-                    event.preventDefault();
+            form.addEventListener( 'submit', async ( event ) => {
+                event.preventDefault();
+                const confirmed = await confirmDelete('Bu koltuk türünü');
+                if ( confirmed ) {
+                    form.submit();
                 }
             } );
         } );

@@ -203,6 +203,7 @@
 
 {% block extra_js %}
 {{ super() }}
+<script src="/static/js/modal-helpers.js"></script>
 <script{% if g.csp_nonce %} nonce="{{ g.csp_nonce }}" {% endif %}>
     document.addEventListener( 'DOMContentLoaded', () => {
         const printButton = document.querySelector( '[data-print-qr]' );
@@ -213,13 +214,13 @@
             printButton.addEventListener( 'click', () => {
                 const qrSrc = qrImage.getAttribute( 'src' );
                 if ( !qrSrc ) {
-                    window.alert( 'Yazdırılacak QR kodu bulunamadı.' );
+                    showError( 'Yazdırılacak QR kodu bulunamadı.' );
                     return;
                 }
 
                 const printWindow = window.open( '', '_blank', 'noopener=yes,width=640,height=860' );
                 if ( !printWindow ) {
-                    window.alert( 'Yazdırma penceresi açılamadı.' );
+                    showError( 'Yazdırma penceresi açılamadı. Lütfen pop-up engelleyiciyi kontrol edin.' );
                     return;
                 }
 
@@ -290,14 +291,16 @@
         }
 
         if ( generateButton ) {
-            generateButton.addEventListener( 'click', () => {
+            generateButton.addEventListener( 'click', async () => {
                 const generateUrl = generateButton.dataset.generateUrl;
                 const reservationLabel = generateButton.dataset.reservationLabel || 'bu rezervasyon';
                 if ( !generateUrl ) {
-                    window.alert( 'QR kodu oluşturmak için gerekli adres bulunamadı.' );
+                    showError( 'QR kodu oluşturmak için gerekli adres bulunamadı.' );
                     return;
                 }
-                if ( !window.confirm( `${reservationLabel} için QR kod oluşturulsun mu?` ) ) {
+                
+                const confirmed = await confirmQRGeneration(reservationLabel);
+                if ( !confirmed ) {
                     return;
                 }
 
@@ -305,13 +308,14 @@
                     .then( ( response ) => response.json() )
                     .then( ( data ) => {
                         if ( data.success ) {
-                            window.location.reload();
+                            toastSuccess('QR kod başarıyla oluşturuldu!');
+                            setTimeout(() => window.location.reload(), 1000);
                         } else {
-                            window.alert( `Hata: ${data.error || 'QR kod oluşturulamadı.'}` );
+                            showError( data.error || 'QR kod oluşturulamadı.' );
                         }
                     } )
                     .catch( ( error ) => {
-                        window.alert( `Bağlantı hatası: ${error}` );
+                        showError( `Bağlantı hatası: ${error.message}` );
                     } );
             } );
         }

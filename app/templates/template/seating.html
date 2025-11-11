@@ -225,6 +225,7 @@
 
 {% block extra_js %}
 {{ super() }}
+<script src="/static/js/modal-helpers.js"></script>
 <script{% if g.csp_nonce %} nonce="{{ g.csp_nonce }}" {% endif %}>
     document.addEventListener( 'DOMContentLoaded', () => {
         const createCard = document.querySelector( '[data-create-card]' );
@@ -240,15 +241,17 @@
         toggleButtons.forEach( ( button ) => button.addEventListener( 'click', toggleCreateCard ) );
 
         document.querySelectorAll( '[data-template-delete]' ).forEach( ( form ) => {
-            form.addEventListener( 'submit', ( event ) => {
-                if ( !window.confirm( 'Bu şablonu silmek istediğine emin misin?' ) ) {
-                    event.preventDefault();
+            form.addEventListener( 'submit', async ( event ) => {
+                event.preventDefault();
+                const confirmed = await confirmDelete('Bu şablonu');
+                if ( confirmed ) {
+                    form.submit();
                 }
             } );
         } );
 
         const notify = ( templateId, type ) => {
-            window.alert( `Şablon ${type} özelliği yakında eklenecek (ID: ${templateId})` );
+            showInfo( `Şablon ${type} özelliği yakında eklenecek (ID: ${templateId})` );
         };
 
         document.querySelectorAll( '[data-template-view]' ).forEach( ( button ) => {

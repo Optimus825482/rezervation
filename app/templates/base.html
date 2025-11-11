@@ -90,6 +90,7 @@
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" rel="stylesheet">
     <link href="/static/css/main.css" rel="stylesheet">
     <link href="/static/css/shadcn.css" rel="stylesheet">
+    <link href="/static/css/modal-system.css" rel="stylesheet">
 
     <style{% if g.csp_nonce %} nonce="{{ g.csp_nonce }}" {% endif %}>
         body {
@@ -254,8 +255,13 @@
                             </div>
                         </div>
                         {% endif %}
+                        <button id="clear-cache-btn"
+                            class="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-white/90 transition hover:bg-white/10">
+                            <i class="fas fa-broom"></i>
+                            <span>Önbelleği Temizle</span>
+                        </button>
                         <a href="{{ url_for('auth.logout') }}"
-                            class="flex items-center gap-3 rounded-lg px-3 py-2 text-white/90 transition hover:bg-white/10">
+                            class="mt-1 flex items-center gap-3 rounded-lg px-3 py-2 text-white/90 transition hover:bg-white/10">
                             <i class="fas fa-sign-out-alt"></i>
                             <span>Çıkış Yap</span>
                         </a>
@@ -315,6 +321,12 @@
                     <i class="fas fa-qrcode text-white/70"></i>
                     <span>Check-in Merkezi</span>
                 </a>
+
+                <button id="clear-cache-btn-mobile"
+                    class="mt-2 flex w-full items-center justify-center gap-2 rounded-xl border border-sky-400/20 bg-sky-500/15 px-4 py-3 font-semibold text-sky-100 transition hover:bg-sky-500/25">
+                    <i class="fas fa-broom"></i>
+                    <span>Önbelleği Temizle</span>
+                </button>
 
                 <a href="{{ url_for('auth.logout') }}"
                     class="mt-2 flex items-center justify-center gap-2 rounded-xl border border-rose-400/20 bg-rose-500/15 px-4 py-3 font-semibold text-rose-100 transition hover:bg-rose-500/25">
@@ -418,6 +430,9 @@
     </div>
 
     <!-- Scriptler -->
+    <script src="/static/js/modal-system.js"></script>
+    <script src="/static/js/modal-helpers.js"></script>
+    <script src="/static/js/cache-manager.js" defer></script>
     <script src="/static/js/main.js" defer></script>
     <script src="/static/js/shadcn-utils.js" defer></script>
 

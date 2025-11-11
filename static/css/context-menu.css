@@ -1,0 +1,82 @@
+/**
+ * Context Menu (Sağ Tık Menüsü) Stilleri
+ */
+
+.context-menu {
+    position: fixed;
+    z-index: 10000;
+    background: white;
+    border-radius: 0.75rem;
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3);
+    border: 1px solid rgba(226, 232, 240, 0.8);
+    padding: 0.5rem;
+    min-width: 200px;
+    display: none;
+}
+
+.context-menu.show {
+    display: block;
+    animation: contextMenuFadeIn 0.15s ease;
+}
+
+@keyframes contextMenuFadeIn {
+    from {
+        opacity: 0;
+        transform: scale(0.95);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+@media (prefers-color-scheme: dark) {
+    .context-menu {
+        background: rgb(30, 41, 59);
+        border-color: rgba(71, 85, 105, 0.8);
+    }
+}
+
+.context-menu-item {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.625rem 0.875rem;
+    border-radius: 0.5rem;
+    cursor: pointer;
+    transition: background 0.1s ease;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: rgb(51, 65, 85);
+}
+
+.context-menu-item:hover {
+    background: rgb(241, 245, 249);
+}
+
+@media (prefers-color-scheme: dark) {
+    .context-menu-item {
+        color: rgb(203, 213, 225);
+    }
+    
+    .context-menu-item:hover {
+        background: rgb(51, 65, 85);
+    }
+}
+
+.context-menu-item i {
+    width: 1.25rem;
+    text-align: center;
+}
+
+.context-menu-divider {
+    height: 1px;
+    background: rgb(226, 232, 240);
+    margin: 0.25rem 0;
+}
+
+@media (prefers-color-scheme: dark) {
+    .context-menu-divider {
+        background: rgb(51, 65, 85);
+    }
+}

@@ -262,6 +262,7 @@
 {% endblock %}
 
 {% block extra_js %}
+<script src="/static/js/modal-helpers.js"></script>
 <script>
     const canvas = document.getElementById('reservation-canvas');
     const eventId = {{ event.id }};
@@ -298,7 +299,7 @@
 
         } catch (error) {
             console.error('Canvas yükleme hatası:', error);
-            alert('Yerleşim planı yüklenirken hata oluştu: ' + error.message);
+            showError('Yerleşim planı yüklenirken hata oluştu: ' + error.message);
         }
     }
 
@@ -405,7 +406,7 @@
         e.preventDefault();
 
         if (!selectedSeat) {
-            alert('Lütfen bir oturum seçin');
+            showWarning('Lütfen bir oturum seçin', 'Oturum Seçilmedi');
             return;
         }
 
@@ -430,14 +431,14 @@
             const result = await response.json();
 
             if (result.success) {
-                alert('Rezervasyon başarıyla oluşturuldu!');
+                await showSuccess('Rezervasyon başarıyla oluşturuldu!');
                 window.location.href = '/reservation';
             } else {
-                alert('Hata: ' + (result.message || 'Bilinmeyen hata'));
+                showError(result.message || 'Bilinmeyen hata');
             }
         } catch (error) {
             console.error('Rezervasyon hatası:', error);
-            alert('Rezervasyon oluşturulurken hata oluştu');
+            showError('Rezervasyon oluşturulurken hata oluştu');
         }
     });
 

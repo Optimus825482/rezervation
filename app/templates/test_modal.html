@@ -1,0 +1,279 @@
+{% extends "base.html" %}
+{% block title %}Modal System Test{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto">
+    <div class="card-shadcn">
+        <div class="mb-6">
+            <h1 class="text-3xl font-bold text-slate-900 dark:text-white mb-2">
+                <i class="fas fa-flask text-primary-600"></i>
+                Modal System Test
+            </h1>
+            <p class="text-slate-600 dark:text-slate-400">
+                Tüm modal türlerini test et ve görünümlerini kontrol et.
+            </p>
+        </div>
+
+        <!-- Alert Modals -->
+        <div class="mb-8">
+            <h2 class="text-xl font-semibold text-slate-900 dark:text-white mb-4">
+                <i class="fas fa-bell"></i>
+                Alert Modals
+            </h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <button onclick="testSuccess()" class="btn-shadcn btn-shadcn-default">
+                    <i class="fas fa-circle-check"></i>
+                    Success Alert
+                </button>
+                <button onclick="testError()" class="btn-shadcn btn-shadcn-destructive">
+                    <i class="fas fa-circle-xmark"></i>
+                    Error Alert
+                </button>
+                <button onclick="testWarning()" class="btn-shadcn btn-shadcn-outline">
+                    <i class="fas fa-triangle-exclamation"></i>
+                    Warning Alert
+                </button>
+                <button onclick="testInfo()" class="btn-shadcn btn-shadcn-secondary">
+                    <i class="fas fa-circle-info"></i>
+                    Info Alert
+                </button>
+            </div>
+        </div>
+
+        <!-- Confirmation Modals -->
+        <div class="mb-8">
+            <h2 class="text-xl font-semibold text-slate-900 dark:text-white mb-4">
+                <i class="fas fa-question-circle"></i>
+                Confirmation Modals
+            </h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <button onclick="testConfirm()" class="btn-shadcn btn-shadcn-outline">
+                    <i class="fas fa-check"></i>
+                    Basic Confirm
+                </button>
+                <button onclick="testDeleteConfirm()" class="btn-shadcn btn-shadcn-destructive">
+                    <i class="fas fa-trash"></i>
+                    Delete Confirm
+                </button>
+                <button onclick="testQRConfirm()" class="btn-shadcn btn-shadcn-default">
+                    <i class="fas fa-qrcode"></i>
+                    QR Confirm
+                </button>
+                <button onclick="testClearAllConfirm()" class="btn-shadcn btn-shadcn-outline">
+                    <i class="fas fa-broom"></i>
+                    Clear All Confirm
+                </button>
+            </div>
+        </div>
+
+        <!-- Toast Notifications -->
+        <div class="mb-8">
+            <h2 class="text-xl font-semibold text-slate-900 dark:text-white mb-4">
+                <i class="fas fa-comment"></i>
+                Toast Notifications
+            </h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <button onclick="testToastSuccess()" class="btn-shadcn btn-shadcn-default">
+                    <i class="fas fa-circle-check"></i>
+                    Success Toast
+                </button>
+                <button onclick="testToastError()" class="btn-shadcn btn-shadcn-destructive">
+                    <i class="fas fa-circle-xmark"></i>
+                    Error Toast
+                </button>
+                <button onclick="testToastWarning()" class="btn-shadcn btn-shadcn-outline">
+                    <i class="fas fa-triangle-exclamation"></i>
+                    Warning Toast
+                </button>
+                <button onclick="testToastInfo()" class="btn-shadcn btn-shadcn-secondary">
+                    <i class="fas fa-circle-info"></i>
+                    Info Toast
+                </button>
+            </div>
+        </div>
+
+        <!-- Advanced Tests -->
+        <div class="mb-8">
+            <h2 class="text-xl font-semibold text-slate-900 dark:text-white mb-4">
+                <i class="fas fa-cog"></i>
+                Advanced Tests
+            </h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <button onclick="testCustomIcon()" class="btn-shadcn btn-shadcn-outline">
+                    <i class="fas fa-star"></i>
+                    Custom Icon
+                </button>
+                <button onclick="testHTMLContent()" class="btn-shadcn btn-shadcn-outline">
+                    <i class="fas fa-code"></i>
+                    HTML Content
+                </button>
+                <button onclick="testLongMessage()" class="btn-shadcn btn-shadcn-outline">
+                    <i class="fas fa-align-left"></i>
+                    Long Message
+                </button>
+                <button onclick="testMultipleToasts()" class="btn-shadcn btn-shadcn-outline">
+                    <i class="fas fa-layer-group"></i>
+                    Multiple Toasts
+                </button>
+            </div>
+        </div>
+
+        <!-- Console Tests -->
+        <div class="mb-8">
+            <h2 class="text-xl font-semibold text-slate-900 dark:text-white mb-4">
+                <i class="fas fa-terminal"></i>
+                Console Commands
+            </h2>
+            <div class="rounded-lg bg-slate-900 p-4 text-sm text-slate-300 font-mono">
+                <div class="mb-2"><span class="text-emerald-400">// Basit kullanım</span></div>
+                <div>showSuccess('Başarılı!');</div>
+                <div>showError('Hata oluştu!');</div>
+                <div>showWarning('Dikkat!');</div>
+                <div>showInfo('Bilgi');</div>
+                <div class="mt-3 mb-2"><span class="text-emerald-400">// Confirmation</span></div>
+                <div>const result = await showConfirm('Emin misiniz?');</div>
+                <div class="mt-3 mb-2"><span class="text-emerald-400">// Toast</span></div>
+                <div>toastSuccess('İşlem tamamlandı!');</div>
+                <div class="mt-3 mb-2"><span class="text-emerald-400">// Cache</span></div>
+                <div>clearCache(); <span class="text-slate-500">// Cache'i temizle</span></div>
+                <div>showCacheInfo(); <span class="text-slate-500">// Cache bilgisi</span></div>
+            </div>
+        </div>
+
+        <!-- Result Display -->
+        <div id="result-display" class="hidden">
+            <h2 class="text-xl font-semibold text-slate-900 dark:text-white mb-4">
+                <i class="fas fa-clipboard-check"></i>
+                Son Sonuç
+            </h2>
+            <div id="result-content" class="rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 p-4">
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="/static/js/modal-helpers.js"></script>
+<script>
+    // Alert Tests
+    function testSuccess() {
+        showSuccess('İşlem başarıyla tamamlandı!', 'Başarılı');
+    }
+
+    function testError() {
+        showError('Bir hata oluştu! Lütfen tekrar deneyin.', 'Hata');
+    }
+
+    function testWarning() {
+        showWarning('Bu işlem geri alınamaz. Dikkatli olun!', 'Uyarı');
+    }
+
+    function testInfo() {
+        showInfo('Bu bir bilgilendirme mesajıdır.', 'Bilgi');
+    }
+
+    // Confirmation Tests
+    async function testConfirm() {
+        const result = await showConfirm('Bu işlemi gerçekleştirmek istediğinize emin misiniz?');
+        showResult('Basic Confirm', result);
+    }
+
+    async function testDeleteConfirm() {
+        const result = await confirmDelete('Bu kaydı');
+        showResult('Delete Confirm', result);
+    }
+
+    async function testQRConfirm() {
+        const result = await confirmQRGeneration('Rezervasyon #12345');
+        showResult('QR Confirm', result);
+    }
+
+    async function testClearAllConfirm() {
+        const result = await confirmClearAll();
+        showResult('Clear All Confirm', result);
+    }
+
+    // Toast Tests
+    function testToastSuccess() {
+        toastSuccess('Kayıt başarıyla güncellendi!');
+    }
+
+    function testToastError() {
+        toastError('Bağlantı hatası oluştu!');
+    }
+
+    function testToastWarning() {
+        toastWarning('Oturum süreniz dolmak üzere!');
+    }
+
+    function testToastInfo() {
+        toastInfo('Yeni bildiriminiz var.');
+    }
+
+    // Advanced Tests
+    function testCustomIcon() {
+        Modal.success({
+            title: 'Tebrikler!',
+            message: 'Seviye atladınız!',
+            icon: 'fa-trophy',
+            confirmText: 'Harika!'
+        });
+    }
+
+    function testHTMLContent() {
+        Modal.alert({
+            title: 'HTML İçerik',
+            html: '<p class="mb-2">Bu bir <strong>HTML</strong> içeriktir.</p><ul class="list-disc list-inside"><li>Madde 1</li><li>Madde 2</li><li>Madde 3</li></ul>',
+            confirmText: 'Anladım'
+        });
+    }
+
+    function testLongMessage() {
+        Modal.warning({
+            title: 'Uzun Mesaj Testi',
+            message: 'Bu çok uzun bir mesajdır. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.',
+            confirmText: 'Tamam'
+        });
+    }
+
+    function testMultipleToasts() {
+        toastInfo('İlk toast mesajı');
+        setTimeout(() => toastSuccess('İkinci toast mesajı'), 500);
+        setTimeout(() => toastWarning('Üçüncü toast mesajı'), 1000);
+        setTimeout(() => toastError('Dördüncü toast mesajı'), 1500);
+    }
+
+    // Result Display
+    function showResult(testName, result) {
+        const display = document.getElementById('result-display');
+        const content = document.getElementById('result-content');
+        
+        display.classList.remove('hidden');
+        content.innerHTML = `
+            <div class="flex items-center gap-3">
+                <i class="fas ${result ? 'fa-check-circle text-emerald-500' : 'fa-times-circle text-rose-500'} text-2xl"></i>
+                <div>
+                    <div class="font-semibold text-slate-900 dark:text-white">${testName}</div>
+                    <div class="text-sm text-slate-600 dark:text-slate-400">
+                        Kullanıcı: ${result ? 'Onayladı ✓' : 'İptal Etti ✗'}
+                    </div>
+                </div>
+            </div>
+        `;
+
+        // 3 saniye sonra gizle
+        setTimeout(() => {
+            display.classList.add('hidden');
+        }, 3000);
+    }
+
+    // Sayfa yüklendiğinde bilgi göster
+    console.log('%c🎨 Modal System Test Sayfası', 'font-size: 20px; font-weight: bold; color: #3b82f6;');
+    console.log('%cTüm butonları test edebilirsin!', 'font-size: 14px; color: #64748b;');
+    console.log('%cConsole\'dan da test edebilirsin:', 'font-size: 14px; color: #64748b;');
+    console.log('  showSuccess("Test mesajı")');
+    console.log('  await showConfirm("Emin misiniz?")');
+    console.log('  toastInfo("Bildirim")');
+</script>
+{% endblock %}

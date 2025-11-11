@@ -273,9 +273,8 @@
                         
                         <!-- Hızlı İptal Butonu (sadece aktif etkinlikler için) -->
                         {% if status_lower == 'active' %}
-                        <form method="POST" action="{{ url_for('event.cancel', event_id=event.id) }}" class="inline">
+                        <form method="POST" action="{{ url_for('event.cancel', event_id=event.id) }}" class="inline" data-event-cancel-form>
                             <button type="submit"
-                                    onclick="return confirm('Bu etkinliği iptal etmek istediğinizden emin misiniz?')"
                                     class="btn-shadcn btn-shadcn-ghost btn-shadcn-sm text-amber-600 hover:text-amber-700 hover:bg-amber-50 dark:text-amber-400 dark:hover:bg-amber-900/20"
                                     title="Etkinliği İptal Et">
                                 <i class="fas fa-ban"></i>
@@ -320,4 +319,20 @@
     </div>
     {% endif %}
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="/static/js/modal-helpers.js"></script>
+<script>
+    // Etkinlik iptal formları için onay
+    document.querySelectorAll('[data-event-cancel-form]').forEach((form) => {
+        form.addEventListener('submit', async (event) => {
+            event.preventDefault();
+            const confirmed = await confirmEventCancel();
+            if (confirmed) {
+                form.submit();
+            }
+        });
+    });
+</script>
 {% endblock %}

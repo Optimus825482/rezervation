@@ -53,9 +53,25 @@ def create_app(config_name='default'):
     jwt.init_app(app)
     
     # Initialize limiter with storage_uri from config/env
-    storage_uri = app.config.get('RATELIMIT_STORAGE_URL') or os.environ.get('RATELIMIT_STORAGE_URL')
-    if storage_uri:
+    storage_uri = app.config.get('RATELIMIT_STORAGE_URL') or os.environ.get('RATELIMIT_STORAGE_URL', 'memory://')
+    
+    # Redis kontrolü
+    if storage_uri and storage_uri.startswith('redis://'):
+        try:
+            import redis
+            # Test Redis connection
+            r = redis.from_url(storage_uri)
+            r.ping()
+            limiter.storage_uri = storage_uri
+            app.logger.info('✅ Redis rate limiting initialized')
+        except Exception as e:
+            app.logger.warning(f'⚠️ Redis rate limiting failed: {e}')
+            app.logger.warning('💾 Falling back to memory-based rate limiting')
+            limiter.storage_uri = 'memory://'
+    else:
         limiter.storage_uri = storage_uri
+        app.logger.info(f'💾 Rate limiting initialized: {storage_uri}')
+    
     limiter.init_app(app)
     
     cors.init_app(app, supports_credentials=True)
@@ -63,33 +79,58 @@ def create_app(config_name='default'):
     # Initialize security logger
     security_logger.init_app(app)
     
-    # Initialize session with Redis
+    # Initialize session (Redis veya Filesystem)
     if not app.config.get('TESTING'):
-        # Ensure SESSION_TYPE is set (Flask-Session requires it in app.config)
-        if not app.config.get('SESSION_TYPE'):
-            app.config['SESSION_TYPE'] = 'redis'
-            app.config['SESSION_PERMANENT'] = False
-            app.config['SESSION_USE_SIGNER'] = True
-            app.config['SESSION_KEY_PREFIX'] = 'session_'
+        session_type = app.config.get('SESSION_TYPE', 'filesystem')
         
-        # Setup Redis connection for session
-        import redis
-        from urllib.parse import urlparse
+        if session_type == 'redis':
+            # Redis session için setup
+            try:
+                import redis
+                from urllib.parse import urlparse
+                
+                redis_url = app.config.get('REDIS_URL')
+                if not redis_url:
+                    raise ValueError('REDIS_URL not configured')
+                
+                # Get session Redis URL (use different DB than main Redis)
+                session_redis_url = os.environ.get('SESSION_REDIS') or redis_url
+                
+                # Parse Redis URL
+                parsed = urlparse(session_redis_url)
+                session_redis = redis.Redis(
+                    host=parsed.hostname or 'localhost',
+                    port=parsed.port or 6379,
+                    db=int(parsed.path[1:]) if parsed.path and len(parsed.path) > 1 else 1,
+                    password=parsed.password,
+                    decode_responses=False
+                )
+                
+                # Test connection
+                session_redis.ping()
+                
+                app.config['SESSION_REDIS'] = session_redis
+                app.config['SESSION_KEY_PREFIX'] = 'session_'
+                app.logger.info('✅ Redis session initialized')
+                
+            except Exception as e:
+                # Redis bağlantı hatası - filesystem'e geç
+                app.logger.warning(f'⚠️ Redis connection failed: {e}')
+                app.logger.warning('📁 Falling back to filesystem sessions')
+                app.config['SESSION_TYPE'] = 'filesystem'
+                session_type = 'filesystem'
         
-        # Get session Redis URL (use different DB than main Redis)
-        session_redis_url = os.environ.get('SESSION_REDIS') or app.config.get('REDIS_URL', 'redis://localhost:6379/1')
+        if session_type == 'filesystem':
+            # Filesystem session için setup
+            import os
+            session_dir = app.config.get('SESSION_FILE_DIR', 'flask_session')
+            if not os.path.isabs(session_dir):
+                session_dir = os.path.join(app.root_path, '..', session_dir)
+            
+            os.makedirs(session_dir, exist_ok=True)
+            app.config['SESSION_FILE_DIR'] = session_dir
+            app.logger.info(f'📁 Filesystem session initialized: {session_dir}')
         
-        # Parse Redis URL
-        parsed = urlparse(session_redis_url)
-        session_redis = redis.Redis(
-            host=parsed.hostname or 'localhost',
-            port=parsed.port or 6379,
-            db=int(parsed.path[1:]) if parsed.path and len(parsed.path) > 1 else 1,
-            password=parsed.password,
-            decode_responses=False
-        )
-        
-        app.config['SESSION_REDIS'] = session_redis
         session.init_app(app)
 
     # Register blueprints

@@ -1,18 +1,20 @@
-const CACHE_VERSION = 'v1.1.0';
-const CACHE_NAME = `eventflow-cache-${CACHE_VERSION}`;
+const CACHE_VERSION = 'v1.2.0';
+const CACHE_NAME = `rezervasyon-cache-${CACHE_VERSION}`;
 
 // Önbellekte saklanacak statik dosyalar
 const STATIC_CACHE_URLS = [
-    '/',
     '/static/css/main.css',
     '/static/css/shadcn.css',
+    '/static/css/modal-system.css',
     '/static/js/main.js',
     '/static/js/pwa.js',
     '/static/js/shadcn-utils.js',
+    '/static/js/modal-system.js',
+    '/static/js/modal-helpers.js',
+    '/static/js/cache-manager.js',
     '/static/icons/icon-192.png',
     '/static/icons/icon-512.png',
-    '/static/manifest.json',
-    'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css'
+    '/static/manifest.json'
 ];
 
 // API route'ları için cache süresi (milisaniye)
@@ -24,15 +26,9 @@ self.addEventListener('install', (event) => {
     
     event.waitUntil(
         caches.open(CACHE_NAME)
-            .then(async (cache) => {
+            .then((cache) => {
                 console.log('[Service Worker] Caching static assets');
-                const preloadRequests = STATIC_CACHE_URLS.map((url) => {
-                    const request = new Request(url, { cache: 'reload' });
-                    return cache.add(request).catch((error) => {
-                        console.warn('[Service Worker] Asset preload skipped:', url, error);
-                    });
-                });
-                await Promise.all(preloadRequests);
+                return cache.addAll(STATIC_CACHE_URLS);
             })
             .then(() => self.skipWaiting())
             .catch((error) => {

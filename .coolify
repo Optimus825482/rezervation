@@ -1,0 +1,43 @@
+# Coolify Configuration
+# Bu dosya Coolify'ın projeyi tanıması için gerekli
+
+version: "1.0"
+
+# Build ayarları
+build:
+  type: docker-compose
+  file: docker-compose.prod.yml
+
+# Health check
+healthcheck:
+  path: /health
+  interval: 30s
+  timeout: 10s
+  retries: 3
+
+# Port mapping
+ports:
+  - 80:80
+  - 443:443
+
+# Environment variables (Coolify dashboard'dan override edilecek)
+environment:
+  FLASK_ENV: production
+  WTF_CSRF_ENABLED: "True"
+  JWT_ACCESS_TOKEN_EXPIRES: "3600"
+  MAX_CONTENT_LENGTH: "16777216"
+
+# Volumes (persistent data)
+volumes:
+  - postgres_data
+  - redis_data
+  - uploads_data
+
+# Resource limits
+resources:
+  limits:
+    memory: 2G
+    cpus: "2"
+  reservations:
+    memory: 1G
+    cpus: "1"

@@ -33,8 +33,9 @@ class Config:
         'max_overflow': 20      # Max overflow connections
     }
 
-    # Redis
-    REDIS_URL = os.environ.get('REDIS_URL', 'redis://localhost:6379/0')
+    # Redis (Opsiyonel)
+    REDIS_ENABLED = os.environ.get('REDIS_ENABLED', 'false').lower() == 'true'
+    REDIS_URL = os.environ.get('REDIS_URL', None)
 
     # Upload
     UPLOAD_FOLDER = os.environ.get('UPLOAD_FOLDER', 'app/static/uploads')
@@ -48,8 +49,11 @@ class Config:
     SESSION_COOKIE_HTTPONLY = True
     SESSION_COOKIE_SAMESITE = 'Lax'
 
-    # Rate Limiting
-    RATELIMIT_STORAGE_URL = REDIS_URL
+    # Rate Limiting - Redis yoksa memory kullan
+    # Environment'tan direkt oku, class içinde referans verme
+    _redis_enabled = os.environ.get('REDIS_ENABLED', 'false').lower() == 'true'
+    _redis_url = os.environ.get('REDIS_URL', None)
+    RATELIMIT_STORAGE_URL = _redis_url if (_redis_enabled and _redis_url) else 'memory://'
 
     @staticmethod
     def init_app(app):
@@ -62,6 +66,15 @@ class DevelopmentConfig(Config):
     DEBUG = True
     SQLALCHEMY_ECHO = False
     SESSION_COOKIE_SECURE = False
+    
+    # Development'ta Redis opsiyonel (varsayılan: kapalı)
+    REDIS_ENABLED = os.environ.get('REDIS_ENABLED', 'false').lower() == 'true'
+    
+    # Session için filesystem kullan (Redis yoksa)
+    SESSION_TYPE = 'filesystem'
+    SESSION_FILE_DIR = os.environ.get('SESSION_FILE_DIR', 'flask_session')
+    SESSION_PERMANENT = False
+    SESSION_USE_SIGNER = True
 
 
 class ProductionConfig(Config):
@@ -89,8 +102,14 @@ class ProductionConfig(Config):
     SESSION_COOKIE_HTTPONLY = True    # Prevent JavaScript access to cookies
     SESSION_COOKIE_SAMESITE = 'Lax'   # CSRF protection
     
-    # Session Configuration
-    SESSION_TYPE = 'redis'             # Use Redis for session storage
+    # Redis kontrolü ile session yapılandırması
+    REDIS_ENABLED = os.environ.get('REDIS_ENABLED', 'true').lower() == 'true'
+    
+    # Session Configuration - Redis varsa kullan, yoksa filesystem
+    _prod_redis_enabled = os.environ.get('REDIS_ENABLED', 'true').lower() == 'true'
+    _prod_redis_url = os.environ.get('REDIS_URL', None)
+    SESSION_TYPE = 'redis' if (_prod_redis_enabled and _prod_redis_url) else 'filesystem'
+    SESSION_FILE_DIR = os.environ.get('SESSION_FILE_DIR', '/tmp/flask_session')
     SESSION_PERMANENT = False
     SESSION_USE_SIGNER = True          # Sign session cookies
     PERMANENT_SESSION_LIFETIME = timedelta(hours=24)

@@ -44,3 +44,7 @@ app/static/uploads/logos/*
 *.xlsx
 .coverage
 .pytest_cache/
+
+# Coolify deployment - generated files
+.env.coolify.generated
+*.generated
