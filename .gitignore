@@ -48,3 +48,4 @@ app/static/uploads/logos/*
 # Coolify deployment - generated files
 .env.coolify.generated
 *.generated
+COOLIFY_SIFRELER.txt
